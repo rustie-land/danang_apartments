@@ -12,7 +12,6 @@ const INLINE_STYLING = `
   input[type=range].dual-range { position: absolute; width: 100%; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; z-index: 3; margin: 0; }
   input[type=range].dual-range::-webkit-slider-thumb { pointer-events: all; width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 1px solid #ddd; box-shadow: 0 2px 6px rgba(0,0,0,0.15); -webkit-appearance: none; cursor: pointer; }
   
-  /* Контейнер скролла */
   .sidebar-scroll-container {
     height: 100%;
     overflow-y: auto;
@@ -24,10 +23,26 @@ const INLINE_STYLING = `
   .apt-card { transition: all 0.2s ease-in-out; border: 1px solid #f0f0f2; border-radius: 20px; overflow: hidden; background: #fff; cursor: pointer; margin-bottom: 20px; }
   .apt-card:hover { transform: translateY(-4px) scale(1.01); box-shadow: 0 10px 20px rgba(0,0,0,0.08); border-color: #007AFF; }
   
-  /* Кастомизация скроллбара для чистого вида */
   .sidebar-scroll-container::-webkit-scrollbar { width: 6px; }
   .sidebar-scroll-container::-webkit-scrollbar-track { background: transparent; }
   .sidebar-scroll-container::-webkit-scrollbar-thumb { background: #e2e2e7; border-radius: 10px; }
+
+  /* Хак для карусели */
+  .carousel-container {
+    display: flex;
+    overflow-x: auto;
+    height: 300px;
+    background: #000;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+  .carousel-container::-webkit-scrollbar { display: none; }
+  .carousel-img {
+    flex: 0 0 100%;
+    width: 100%;
+    object-fit: cover;
+    scroll-snap-align: start;
+  }
 `;
 
 const createIcon = (color, isBig = false) => new L.Icon({
@@ -57,6 +72,27 @@ const getCleanPrice = (apt) => {
   let num = parseFloat(apt.numeric_price);
   if (!num) return 0;
   return num < 1000 ? num * 1000000 : num;
+};
+
+// Компонент Умного описания с активными ссылками
+const SmartDescription = ({ text }) => {
+  if (!text) return null;
+  const parts = text.split(/(\+?\d[\d\s-]{8,12}|@[\w_]{5,}|https?:\/\/t\.me\/[\w_]+|t\.me\/[\w_]+)/g);
+  return (
+    <div style={{ fontSize: '15px', lineHeight: '1.6', color: '#1d1d1f', whiteSpace: 'pre-wrap' }}>
+      {parts.map((part, i) => {
+        if (/^\+?\d[\d\s-]{8,12}$/.test(part)) {
+          const cleanPhone = part.replace(/[^\d+]/g, '');
+          return <a key={i} href={`tel:${cleanPhone}`} style={{color: '#007AFF', fontWeight: '600'}}>{part}</a>;
+        }
+        if (/^(@[\w_]{5,}|https?:\/\/t\.me\/|t\.me\/)/.test(part)) {
+          const url = part.startsWith('@') ? `https://t.me/${part.replace('@', '')}` : (part.startsWith('t.me') ? `https://${part}` : part);
+          return <a key={i} href={url} target="_blank" rel="noreferrer" style={{color: '#007AFF', fontWeight: '600'}}>{part}</a>;
+        }
+        return part;
+      })}
+    </div>
+  );
 };
 
 export default function App() {
@@ -133,11 +169,10 @@ export default function App() {
 
       <div style={{ ...styles.sidebarWrapper, width: sidebarWidth, transform: `translateX(${isSidebarOpen ? 0 : -sidebarWidth}px)` }}>
         <div style={styles.sidebar}>
-          {/* ВЕСЬ САЙДБАР ТЕПЕРЬ ОДИН СКРОЛЛ-КОНТЕЙНЕР */}
           <div className="sidebar-scroll-container">
             <div style={styles.sidebarHeader}>
               <h2 style={styles.title}>Da Nang Finder 🌴</h2>
-              <div style={styles.sectionLabel}>Budget: {fmt(currentFilter.min)} - {fmt(currentFilter.max)}</div>
+              <div style={styles.sectionLabel}>Budget: {fmt(currentFilter.min)} - {fmt(currentFilter.max)} VND</div>
               <div className="range-slider-container">
                 <div className="slider-track" />
                 <div className="slider-progress" style={{ left: `${getPercent(currentFilter.min)}%`, right: `${100 - getPercent(currentFilter.max)}%` }} />
@@ -172,19 +207,34 @@ export default function App() {
         <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={styles.macPill}>{isSidebarOpen ? '← MAP' : 'LIST →'}</button>
       </div>
 
+      {/* MODAL WINDOW WITH RESTORED MAP */}
       {selectedApt && (
         <div style={styles.overlay} onClick={() => setSelectedApt(null)}>
           <div style={styles.modal} onClick={e => e.stopPropagation()}>
             <div style={styles.modalScrollContent}>
-              <div style={styles.carousel}>{selectedApt.image_urls?.map((url, i) => (<img key={i} src={url} style={styles.carouselImg} alt="" />))}</div>
-              <div style={{ padding: '25px' }}>
-                <p style={{ fontSize: '15px', lineHeight: '1.6', color: '#1d1d1f' }}>{selectedApt.description}</p>
+              <div className="carousel-container">
+                {selectedApt.image_urls?.map((url, i) => (
+                  <img key={i} src={url} className="carousel-img" alt="" />
+                ))}
               </div>
+              <div style={{ padding: '25px 25px 120px' }}>
+                <SmartDescription text={selectedApt.description} />
+                
+                {/* RESTORED MINI MAP */}
+                <div style={styles.miniMapLabel}>📍 Map Interaction Enabled</div>
+                <div style={styles.miniMap}>
+                  <MapContainer center={[selectedApt.lat, selectedApt.lng]} zoom={15} zoomControl={true} dragging={true} style={{ height: '100%', borderRadius: '15px' }}>
+                    <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                    <Marker position={[selectedApt.lat, selectedApt.lng]} icon={defaultIcon} />
+                  </MapContainer>
+                </div>
+              </div>
+              <div className="fade-bottom" style={{bottom: '70px', height: '60px'}} />
             </div>
             <div style={styles.modalFooter}>
-               <div>
-                  <div style={{ fontSize: '11px', color: '#86868b', textTransform: 'uppercase' }}>Monthly rent</div>
-                  <div style={{ fontSize: '20px', fontWeight: '800' }}>{fmt(getCleanPrice(selectedApt))} VND</div>
+               <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '11px', color: '#86868b', textTransform: 'uppercase' }}>Monthly rent</span>
+                  <span style={{ fontSize: '20px', fontWeight: '800' }}>{fmt(getCleanPrice(selectedApt))} VND</span>
                </div>
                <button onClick={() => setSelectedApt(null)} style={styles.paleBlueBtn}>Close</button>
             </div>
@@ -198,25 +248,25 @@ export default function App() {
 const styles = {
   container: { display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: '#fff', fontFamily: '-apple-system, sans-serif' },
   mapWrapper: { position: 'absolute', inset: 0, zIndex: 1 },
-  sidebarWrapper: { position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 100, display: 'flex', alignItems: 'center', transition: 'transform 0.4s' },
+  sidebarWrapper: { position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 100, display: 'flex', alignItems: 'center', transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)' },
   sidebar: { height: '100%', background: 'rgba(255, 255, 255, 0.98)', display: 'flex', flexDirection: 'column', width: '100%', boxShadow: '10px 0 30px rgba(0,0,0,0.05)' },
-  sidebarHeader: { padding: '40px 24px 20px' },
+  sidebarHeader: { padding: '40px 24px 15px', flexShrink: 0 },
   title: { margin: '0 0 10px 0', fontWeight: '800', fontSize: '24px' },
-  sectionLabel: { fontSize: '10px', fontWeight: '800', color: '#86868b', textTransform: 'uppercase' },
+  sectionLabel: { fontSize: '10px', fontWeight: '800', color: '#86868b', textTransform: 'uppercase', marginBottom: '4px' },
   tagGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginTop: '15px' },
   typeChip: { padding: '10px 5px', borderRadius: '10px', border: 'none', fontSize: '10px', fontWeight: '700', cursor: 'pointer' },
   hashtagsRow: { display: 'flex', gap: '6px', overflowX: 'auto', marginTop: '12px', scrollbarWidth: 'none' },
   tag: { padding: '6px 12px', borderRadius: '20px', border: '1px solid #eee', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' },
-  list: { padding: '0 24px' }, // Убрали внутренний скролл списка
+  list: { padding: '0 24px' },
   cardImg: { width: '100%', height: '200px', objectFit: 'cover' },
   priceText: { fontSize: '19px', fontWeight: '800' },
   descriptionText: { fontSize: '13px', color: '#86868b' },
   macPill: { position: 'absolute', right: '-45px', top: '50%', transform: 'translateY(-50%) rotate(-90deg)', background: '#1d1d1f', color: '#fff', border: 'none', borderRadius: '20px', padding: '10px 16px', fontWeight: '700', fontSize: '11px', cursor: 'pointer' },
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' },
-  modal: { background: '#fff', width: '92%', maxWidth: '500px', borderRadius: '32px', overflow: 'hidden', maxHeight: '85vh', display: 'flex', flexDirection: 'column', position: 'relative' },
-  modalScrollContent: { overflowY: 'auto', flex: 1 },
-  carousel: { display: 'flex', overflowX: 'auto', height: '300px', background: '#000' },
-  carouselImg: { flex: '0 0 100%', width: '100%', objectFit: 'cover' },
-  modalFooter: { padding: '20px 25px', borderTop: '1px solid #f0f0f2', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff' },
+  modal: { background: '#fff', width: '92%', maxWidth: '550px', borderRadius: '32px', overflow: 'hidden', maxHeight: '85vh', display: 'flex', flexDirection: 'column', position: 'relative' },
+  modalScrollContent: { overflowY: 'auto', flex: 1, position: 'relative' },
+  miniMapLabel: { fontSize: '10px', fontWeight: '700', color: '#007AFF', margin: '20px 0 8px' },
+  miniMap: { height: '200px', borderRadius: '20px', overflow: 'hidden', border: '1px solid #eee' },
+  modalFooter: { padding: '20px 25px', borderTop: '1px solid #f0f0f2', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10 },
   paleBlueBtn: { padding: '14px 30px', background: '#E3F2FD', color: '#007AFF', border: 'none', borderRadius: '14px', fontWeight: '700', cursor: 'pointer' }
 };
