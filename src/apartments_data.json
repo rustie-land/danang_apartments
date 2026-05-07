@@ -1,0 +1,245 @@
+[
+    {
+        "id": 0,
+        "title": "Apartment in Ngu Hanh Son",
+        "price": "nan",
+        "description": "Ngọc Hải GRAND OPENING – BRAND NEW APARTMENT, MY AN AREA...",
+        "lat": 16.042248049705798,
+        "lng": 108.24331344116489,
+        "district": "Ngu Hanh Son"
+    },
+    {
+        "id": 1,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Jimmi Baron Hi everyone...",
+        "lat": 16.043548426759163,
+        "lng": 108.20954118857046,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 2,
+        "title": "Apartment in Danang (General)",
+        "price": "2 m",
+        "description": "Evelyn Lin [LOOKING FOR APARTMENT] - 2 Months Monthly Rental (Late June - Late August)...",
+        "lat": 16.04076751086593,
+        "lng": 108.20193338009494,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 3,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Đức Khôi HIGH-FLOOR STUDIO – CITY CENTER VIEW | READY NOW...",
+        "lat": 16.041453342042715,
+        "lng": 108.20594839747838,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 4,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Nguyễn Văn Hiếu MODERN DESIGN STUDIO | TO HIEN THANH ST | NEAR THE BEACH...",
+        "lat": 16.040353496528862,
+        "lng": 108.20012020665186,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 5,
+        "title": "Apartment in Hai Chau",
+        "price": "nan",
+        "description": "Dương PT COMING SOON – MODERN 1-BEDROOM APARTMENT | HAI CHAU CENTER...",
+        "lat": 16.054700791324848,
+        "lng": 108.22033528952576,
+        "district": "Hai Chau"
+    },
+    {
+        "id": 6,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Dương PT PANOMA – 2 BEDROOMS | 2 BATHROOMS – HIGH FLOOR – CITY VIEW...",
+        "lat": 16.049863049288664,
+        "lng": 108.20980678445156,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 7,
+        "title": "Apartment in Son Tra",
+        "price": "nan",
+        "description": "Dương PT NEWLY BUILT 1-BEDROOM APARTMENT – NEAR SON TRA PENINSULA...",
+        "lat": 16.070987079163196,
+        "lng": 108.24063814924065,
+        "district": "Son Tra"
+    },
+    {
+        "id": 8,
+        "title": "Apartment in Ngu Hanh Son",
+        "price": "5 m",
+        "description": "Dương PT BRAND NEW GARDEN HOUSE – 5 MIN WALK TO THE BEACH | NGU HANH SON...",
+        "lat": 16.029367092517177,
+        "lng": 108.25012246078565,
+        "district": "Ngu Hanh Son"
+    },
+    {
+        "id": 9,
+        "title": "Apartment in Hai Chau",
+        "price": "nan",
+        "description": "Dương PT MODERN DESIGN PENTHOUSE – 2 BEDROOMS | HOA SON 10 STREET, HAI CHAU...",
+        "lat": 16.06230715192607,
+        "lng": 108.22259050077638,
+        "district": "Hai Chau"
+    },
+    {
+        "id": 10,
+        "title": "Apartment in Ngu Hanh Son",
+        "price": "nan",
+        "description": "Dương PT BRIGHT & MODERN 1-BEDROOM APARTMENT – MY AN AREA | WALK TO MY KHE BEACH...",
+        "lat": 16.039045337250357,
+        "lng": 108.2433003264243,
+        "district": "Ngu Hanh Son"
+    },
+    {
+        "id": 11,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Dương PT MODERN 1-BEDROOM APARTMENT – ROOFTOP GYM | NEAR MY KHE BEACH...",
+        "lat": 16.05033057121064,
+        "lng": 108.19828617323014,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 12,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Nguyễn Thị Kim Huệ 2-BEDROOM APARTMENT – TRAN PHU STREET – DRAGON BRIDGE VIEW & FIREWORKS ROOFTOP...",
+        "lat": 16.04503193057405,
+        "lng": 108.21098203197154,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 13,
+        "title": "Apartment in Son Tra",
+        "price": "nan",
+        "description": "Nguyễn Thị Kim Huệ STUDIO APARTMENT – AN NHON 12, SON TRA – MOVE-IN READY...",
+        "lat": 16.08193073271401,
+        "lng": 108.24032745613776,
+        "district": "Son Tra"
+    },
+    {
+        "id": 14,
+        "title": "Apartment in Hai Chau",
+        "price": "nan",
+        "description": "Dương PT BRAND NEW 1-BEDROOM APARTMENT | HAI CHAU DISTRICT...",
+        "lat": 16.05703815668481,
+        "lng": 108.21863669634222,
+        "district": "Hai Chau"
+    },
+    {
+        "id": 15,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Nguyễn Thị Kim Huệ AVAILABLE NOW! STUDIO APARTMENT – HOANG DIEU STREET, REAR UNIT, 5TH FLOOR...",
+        "lat": 16.04709963350498,
+        "lng": 108.21196206224171,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 16,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Dương PT MODERN PENTHOUSE FOR RENT – LUXURY LIVING WITH PRIVATE TERRACE...",
+        "lat": 16.05089008618554,
+        "lng": 108.20805509929438,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 17,
+        "title": "Apartment in Son Tra",
+        "price": "100m",
+        "description": "Dương PT BRAND NEW 1-BEDROOM APARTMENT – ONLY 100M TO BEACH | SON TRA...",
+        "lat": 16.07370176168262,
+        "lng": 108.22914317556561,
+        "district": "Son Tra"
+    },
+    {
+        "id": 18,
+        "title": "Apartment in Ngu Hanh Son",
+        "price": "nan",
+        "description": "Dương PT PANOMA 1 – BRAND-NEW 1BR | HIGH FLOOR | RIVER VIEW | MY AN AREA...",
+        "lat": 16.038869210993425,
+        "lng": 108.2508535116894,
+        "district": "Ngu Hanh Son"
+    },
+    {
+        "id": 19,
+        "title": "Apartment in Ngu Hanh Son",
+        "price": "nan",
+        "description": "Dương PT PANOMA 2 – BRAND-NEW 1BR | HIGH FLOOR | RIVER VIEW | MY AN AREA...",
+        "lat": 16.036594801879417,
+        "lng": 108.25140951336623,
+        "district": "Ngu Hanh Son"
+    },
+    {
+        "id": 20,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Dương PT MODERN DESIGN 2-BEDROOM APARTMENT – POOL -GYM- NGU HAN SON AREA...",
+        "lat": 16.04583488337813,
+        "lng": 108.20326905595903,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 21,
+        "title": "Apartment in Danang (General)",
+        "price": "10m",
+        "description": "Uyên Tú Đoàn Nguyễn BALCONY STUDIO NEAR DRAGON BRIDGE – ONLY 10M!...",
+        "lat": 16.05143846950276,
+        "lng": 108.20135499762158,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 22,
+        "title": "Apartment in Danang (General)",
+        "price": "15m",
+        "description": "Dương PT FRESH & BRIGHT 2-BEDROOM APARTMENT | BINH MINH STREET | ONLY 15M...",
+        "lat": 16.053904849636254,
+        "lng": 108.20651555129547,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 23,
+        "title": "Apartment in Son Tra",
+        "price": "nan",
+        "description": "Côngg Chinh Luxury Penthouse for Rent – Son Tra District...",
+        "lat": 16.07557391966535,
+        "lng": 108.23329071801598,
+        "district": "Son Tra"
+    },
+    {
+        "id": 24,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Đinh Thịnh Available Apartment – Ready on May 9 | Near the Beach | Fully Furnished...",
+        "lat": 16.054795663600018,
+        "lng": 108.19825136864918,
+        "district": "Danang (General)"
+    },
+    {
+        "id": 25,
+        "title": "Apartment in Son Tra",
+        "price": "nan",
+        "description": "Công Chinh Luxury Penthouse for Rent – Son Tra District...",
+        "lat": 16.078554204189366,
+        "lng": 108.24079397855967,
+        "district": "Son Tra"
+    },
+    {
+        "id": 26,
+        "title": "Apartment in Danang (General)",
+        "price": "nan",
+        "description": "Dương PT PREMIUM TOUCH - SEA FRONT BUILDING  1-BEDROOM APARTMENT FOR RENT...",
+        "lat": 16.041662913319257,
+        "lng": 108.20237863964861,
+        "district": "Danang (General)"
+    }
+]
