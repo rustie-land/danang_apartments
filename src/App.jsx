@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import apartmentsData from './apartments_data.json';
 
-// --- ИКОНКИ ---
+// --- CUSTOM MARKERS ---
 const defaultIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
@@ -17,14 +17,13 @@ const activeIcon = new L.Icon({
   iconSize: [30, 48], iconAnchor: [15, 48]
 });
 
-// Контроллер для перемещения карты при выборе квартиры
 function MapController({ center }) {
   const map = useMap();
   if (center) map.setView(center, 15, { animate: true });
   return null;
 }
 
-// --- МОДАЛЬНОЕ ОКНО (ДЕТАЛИ КВАРТИРЫ) ---
+// --- MODAL COMPONENT ---
 const DetailsModal = ({ apt, onClose }) => {
   if (!apt) return null;
 
@@ -33,66 +32,68 @@ const DetailsModal = ({ apt, onClose }) => {
       onClick={onClose} 
       style={{ 
         position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
-        backgroundColor: 'rgba(0,0,0,0.9)', zIndex: 20000, 
-        display: 'flex', alignItems: 'center', justifyContent: 'center' 
+        backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 20000, 
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backdropFilter: 'blur(5px)'
       }}
     >
       <div 
         onClick={e => e.stopPropagation()} 
         style={{ 
-          backgroundColor: 'white', borderRadius: '24px', width: '95%', maxWidth: '900px', 
+          backgroundColor: 'white', borderRadius: '28px', width: '95%', maxWidth: '800px', 
           maxHeight: '90vh', overflowY: 'auto', position: 'relative',
-          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)'
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
         }}
       >
         <button 
           onClick={onClose} 
           style={{ 
-            position: 'absolute', top: '15px', right: '15px', zIndex: 100, 
+            position: 'absolute', top: '20px', right: '20px', zIndex: 100, 
             background: 'white', border: 'none', borderRadius: '50%', 
-            width: '40px', height: '40px', cursor: 'pointer', fontSize: '20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+            width: '44px', height: '44px', cursor: 'pointer', fontSize: '20px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}
         >
           ✕
         </button>
 
-        {/* ГАЛЕРЕЯ ВНУТРИ МОДАЛКИ */}
-        <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', padding: '15px', background: '#1a202c', scrollSnapType: 'x mandatory' }}>
+        {/* IMAGE CAROUSEL */}
+        <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', padding: '20px', background: '#0f172a', scrollSnapType: 'x mandatory' }}>
           {apt.images && apt.images.map((img, i) => (
             <img 
               key={i} 
               src={img} 
-              style={{ height: '350px', minWidth: '280px', borderRadius: '12px', objectFit: 'cover', flexShrink: 0, scrollSnapAlign: 'start' }} 
-              alt={`View ${i}`} 
+              style={{ height: '400px', minWidth: '300px', borderRadius: '16px', objectFit: 'cover', flexShrink: 0, scrollSnapAlign: 'center' }} 
+              alt="apartment" 
             />
           ))}
         </div>
 
-        {/* ТЕКСТОВАЯ ИНФОРМАЦИЯ */}
-        <div style={{ padding: '30px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
-            <div>
-              <h2 style={{ fontSize: '32px', color: '#1e40af', margin: '0 0 5px 0' }}>{apt.price}</h2>
-              <p style={{ fontSize: '18px', fontWeight: '600', color: '#475569' }}>📞 {apt.phone}</p>
+        {/* CONTENT */}
+        <div style={{ padding: '32px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+            <div style={{ 
+              background: '#eff6ff', border: '2px solid #bfdbfe', padding: '12px 24px', borderRadius: '16px' 
+            }}>
+              <span style={{ fontSize: '32px', fontWeight: '900', color: '#1e40af' }}>{apt.price}</span>
             </div>
+            
             <a 
               href={apt.link} 
               target="_blank" 
               rel="noreferrer" 
-              style={{ padding: '12px 24px', background: '#1877F2', color: 'white', borderRadius: '12px', textDecoration: 'none', fontWeight: 'bold' }}
+              style={{ padding: '14px 28px', background: '#1877F2', color: 'white', borderRadius: '14px', textDecoration: 'none', fontWeight: '700', fontSize: '16px' }}
             >
-              Original FB Post
+              View on Facebook
             </a>
           </div>
+
+          <p style={{ fontSize: '20px', fontWeight: '700', color: '#475569', marginTop: '20px' }}>📞 {apt.phone}</p>
           
-          <div style={{ marginTop: '25px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+          <div style={{ marginTop: '24px', borderTop: '1px solid #f1f5f9', paddingTop: '24px' }}>
             <p style={{ 
-              fontSize: '16px', 
-              lineHeight: '1.7', 
-              color: '#334155', 
-              whiteSpace: 'pre-wrap', // СОХРАНЯЕТ ПЕРЕНОСЫ СТРОК ИЗ FB
-              wordBreak: 'break-word'
+              fontSize: '17px', lineHeight: '1.8', color: '#334155', 
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word'
             }}>
               {apt.description}
             </p>
@@ -103,7 +104,7 @@ const DetailsModal = ({ apt, onClose }) => {
   );
 };
 
-// --- ГЛАВНЫЙ КОМПОНЕНТ ---
+// --- MAIN APP ---
 export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -120,24 +121,16 @@ export default function App() {
 
   return (
     <div style={{ 
-      display: 'flex', 
-      flexDirection: isMobile ? 'column' : 'row', 
-      height: '100vh', 
-      width: '100vw', 
-      overflow: 'hidden',
-      position: 'relative',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      display: 'flex', flexDirection: isMobile ? 'column' : 'row', 
+      height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative',
+      fontFamily: '"Inter", sans-serif'
     }}>
       
-      {/* КАРТА (Фон для мобилок, правая часть для десктопа) */}
+      {/* MAP SECTION */}
       <div style={{ 
-        flex: 1, 
-        height: '100%', 
-        width: '100%',
+        flex: 1, height: '100%', width: '100%',
         position: isMobile ? 'absolute' : 'relative',
-        top: 0,
-        left: 0,
-        zIndex: 1
+        top: 0, left: 0, zIndex: 1
       }}>
         <MapContainer center={[16.0544, 108.2422]} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
@@ -153,21 +146,20 @@ export default function App() {
         </MapContainer>
       </div>
 
-      {/* СПИСОК / ГУЛЯЮЩАЯ ЛЕНТА */}
+      {/* SIDEBAR / MOBILE LIST */}
       <div style={{ 
-        width: isMobile ? '100%' : '420px',
+        width: isMobile ? '100%' : '440px',
         height: isMobile ? 'auto' : '100%',
         position: isMobile ? 'absolute' : 'relative',
-        bottom: 0,
-        left: 0,
-        zIndex: 1000,
-        background: isMobile ? 'transparent' : 'white',
+        bottom: 0, left: 0, zIndex: 1000,
+        background: isMobile ? 'transparent' : '#fff',
         borderRight: isMobile ? 'none' : '1px solid #e2e8f0',
         pointerEvents: 'none'
       }}>
         {!isMobile && (
-          <div style={{ padding: '25px', borderBottom: '1px solid #eee', background: 'white' }}>
-            <h1 style={{ fontSize: '22px', margin: 0, color: '#1a202c' }}>Da Nang Rentals 🏖️</h1>
+          <div style={{ padding: '30px', borderBottom: '1px solid #f1f5f9' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0f172a' }}>Da Nang Rentals 🌴</h1>
+            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Found {apartmentsData.length} listings</p>
           </div>
         )}
 
@@ -175,37 +167,34 @@ export default function App() {
           display: isMobile ? 'flex' : 'block',
           overflowX: isMobile ? 'auto' : 'hidden',
           overflowY: isMobile ? 'hidden' : 'auto',
-          padding: '15px',
-          gap: '15px',
-          pointerEvents: 'auto',
+          padding: '20px', gap: '16px', pointerEvents: 'auto',
           scrollSnapType: isMobile ? 'x mandatory' : 'none',
           WebkitOverflowScrolling: 'touch',
-          height: isMobile ? 'auto' : 'calc(100vh - 80px)'
+          height: isMobile ? 'auto' : 'calc(100vh - 100px)'
         }}>
           {apartmentsData.map(apt => (
             <div 
               key={apt.id} 
               onClick={() => { setSelectedId(apt.id); setShowModal(true); }}
               style={{ 
-                borderRadius: '20px', 
-                border: '1px solid #e2e8f0', 
-                marginBottom: isMobile ? '0' : '15px',
-                flexShrink: 0,
-                width: isMobile ? '85%' : '100%',
-                maxWidth: isMobile ? '320px' : 'none',
-                overflow: 'hidden', 
-                cursor: 'pointer', 
-                background: 'white',
-                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-                scrollSnapAlign: 'center',
-                transition: 'transform 0.2s'
+                borderRadius: '24px', border: '1px solid #e2e8f0', 
+                marginBottom: isMobile ? '0' : '20px', flexShrink: 0,
+                width: isMobile ? '82%' : '100%', maxWidth: isMobile ? '300px' : 'none',
+                overflow: 'hidden', cursor: 'pointer', background: 'white',
+                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.08)',
+                scrollSnapAlign: 'center', transition: 'transform 0.2s ease'
               }}
             >
-              <img src={apt.images[0]} style={{ width: '100%', height: isMobile ? '150px' : '200px', objectFit: 'cover' }} alt="preview" />
-              <div style={{ padding: '15px' }}>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#1e40af' }}>{apt.price}</div>
-                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '5px' }}>
-                  {apt.description.substring(0, 70)}...
+              <img src={apt.images[0]} style={{ width: '100%', height: isMobile ? '160px' : '220px', objectFit: 'cover' }} alt="preview" />
+              <div style={{ padding: '20px' }}>
+                <div style={{ 
+                  background: '#eff6ff', color: '#1e40af', padding: '6px 12px', 
+                  borderRadius: '10px', display: 'inline-block', fontWeight: '800', fontSize: '18px'
+                }}>
+                  {apt.price}
+                </div>
+                <div style={{ fontSize: '14px', color: '#475569', marginTop: '10px', lineHeight: '1.5' }}>
+                  {apt.description.substring(0, 80)}...
                 </div>
               </div>
             </div>
