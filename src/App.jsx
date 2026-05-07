@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import apartmentsData from './apartments_data.json';
 
-// Исправление иконки маркера для Leaflet
+// Фикс иконок
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -12,123 +12,67 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
-// Компонент для центрирования карты
-function ChangeView({ center }) {
-  const map = useMap();
-  map.setView(center, 13);
-  return null;
-}
+const Carousel = ({ images }) => {
+  const [idx, setIdx] = useState(0);
+  if (!images || images.length === 0) return null;
 
-function App() {
-  const [searchDistrict, setSearchDistrict] = useState('');
-  const [selectedApt, setSelectedApt] = useState(null);
-
-  const filteredApartments = useMemo(() => {
-    return apartmentsData.filter(apt =>
-      apt.district.toLowerCase().includes(searchDistrict.toLowerCase())
-    );
-  }, [searchDistrict]);
-
-  const mapCenter = [16.0544, 108.2022];
+  const next = (e) => { e.stopPropagation(); setIdx((idx + 1) % images.length); };
+  const prev = (e) => { e.stopPropagation(); setIdx((idx - 1 + images.length) % images.length); };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* Header */}
-      <header style={{ 
-        backgroundColor: '#1e40af', 
-        color: 'white', 
-        padding: '15px 25px', 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        zIndex: 1000 
-      }}>
-        <h1 style={{ margin: 0, fontSize: '20px' }}>Danang Rental Radar 🏝️</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span>Район:</span>
-          <input
-            type="text"
-            placeholder="Напр: Ngu Hanh Son"
-            value={searchDistrict}
-            onChange={(e) => setSearchDistrict(e.target.value)}
-            style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', width: '200px' }}
-          />
-        </div>
-      </header>
+    <div style={{ position: 'relative', width: '100%', height: '200px', backgroundColor: '#000' }}>
+      <img src={images[idx]} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Room" />
+      {images.length > 1 && (
+        <>
+          <button onClick={prev} style={btnStyle('left')}>‹</button>
+          <button onClick={next} style={btnStyle('right')}>›</button>
+          <div style={{ position: 'absolute', bottom: 10, width: '100%', textAlign: 'center', color: '#fff', fontSize: '12px', fontWeight: 'bold', textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}>
+            {idx + 1} / {images.length}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Список карточек */}
-        <div style={{ width: '400px', overflowY: 'auto', padding: '15px', backgroundColor: '#f3f4f6' }}>
-          <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '15px' }}>
-            Найдено вариантов: {filteredApartments.length}
-          </p>
-          {filteredApartments.map(apt => (
-            <div 
-              key={apt.id} 
-              onClick={() => setSelectedApt(apt)}
-              style={{ 
-                backgroundColor: 'white', 
-                borderRadius: '12px', 
-                overflow: 'hidden', 
-                marginBottom: '20px', 
-                cursor: 'pointer',
-                boxShadow: selectedApt?.id === apt.id ? '0 0 0 3px #3b82f6' : '0 2px 8px rgba(0,0,0,0.05)',
-                transition: 'transform 0.2s'
-              }}
-            >
-              {/* Картинка с обработкой ошибки */}
-              <img 
-                src={apt.image_url || 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=400&q=80'} 
-                alt="apartment"
-                style={{ width: '100%', height: '180px', objectFit: 'cover' }}
-                onError={(e) => { e.target.src = 'https://via.placeholder.com/400x200?text=Photo+Unavailable'; }}
-              />
-              
-              <div style={{ padding: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <h3 style={{ margin: 0, color: '#1e40af', fontSize: '18px' }}>{apt.price}</h3>
-                  <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '3px 8px', borderRadius: '12px', fontWeight: '600' }}>
-                    {apt.rooms}
-                  </span>
-                </div>
-                
-                <p style={{ margin: '8px 0', fontSize: '13px', color: '#4b5563', lineHeight: '1.4' }}>
-                  {apt.description}
-                </p>
+const btnStyle = (side) => ({
+  position: 'absolute', top: '50%', transform: 'translateY(-50%)', [side]: '10px',
+  background: 'rgba(255,255,255,0.8)', border: 'none', borderRadius: '50%', 
+  width: '30px', height: '30px', cursor: 'pointer', fontSize: '20px', display: 'flex', 
+  alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.2)', zIndex: 10
+});
 
-                <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginTop: '10px' }}>
-                  <span style={{ fontSize: '11px', color: '#6b7280' }}>📍 {apt.district}</span>
-                  <span style={{ fontSize: '11px', color: '#6b7280' }}>📞 {apt.contact}</span>
-                </div>
+function App() {
+  const [view, setView] = useState([16.0544, 108.2422]);
 
-                <a 
-                  href={apt.original_link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  style={{ 
-                    display: 'block', 
-                    marginTop: '12px', 
-                    textAlign: 'center', 
-                    padding: '8px', 
-                    backgroundColor: '#eff6ff', 
-                    color: '#2563eb', 
-                    textDecoration: 'none', 
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontWeight: '600'
-                  }}
-                >
-                  Посмотреть на Facebook →
-                </a>
-              </div>
+  return (
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#f0f2f5' }}>
+      <div style={{ width: '420px', overflowY: 'auto', padding: '20px', zIndex: 10 }}>
+        <h2 style={{ marginBottom: '20px', color: '#1a365d' }}>Rental Radar Da Nang 🏝️</h2>
+        {apartmentsData.map(apt => (
+          <div key={apt.id} onClick={() => setView([apt.lat, apt.lng])} 
+            style={{ backgroundColor: '#fff', borderRadius: '15px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', cursor: 'pointer' }}>
+            <Carousel images={apt.images} />
+            <div style={{ padding: '15px' }}>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#2b6cb0', marginBottom: '8px' }}>{apt.price}</div>
+              <p style={{ fontSize: '13px', color: '#4a5568', lineHeight: '1.4' }}>{apt.description}</p>
+              <a href={apt.original_link} target="_blank" style={{ color: '#3182ce', fontSize: '12px', fontWeight: '600' }}>Открыть в Facebook →</a>
             </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ flex: 1 }}>
+        <MapContainer center={view} zoom={14} style={{ height: '100%' }}>
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {apartmentsData.map(apt => (
+            <Marker key={apt.id} position={[apt.lat, apt.lng]}>
+              <Popup>{apt.price}</Popup>
+            </Marker>
           ))}
-        </div>
+        </MapContainer>
+      </div>
+    </div>
+  );
+}
 
-        {/* Карта */}
-        <div style={{ flex: 1 }}>
-          <MapContainer center={mapCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
-            <TileLayer
-              url="https://{s}.
+export default App;

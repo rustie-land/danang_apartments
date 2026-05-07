@@ -1,58 +1,56 @@
 import pandas as pd
 import json
 import os
-import re
 
 def clean_data():
-    csv_file = 'data.csv'
-    # Сохраняем сразу в src, чтобы React увидел изменения
-    output_json = 'src/apartments_data.json'
+    df = pd.read_csv('data.csv')
+    apartments = []
 
-    if not os.path.exists(csv_file):
-        print(f"❌ Ошибка: Файл '{csv_file}' не найден!")
-        return
+    # Словарь координат популярных улиц и районов Дананга
+    STREET_COORDS = {
+        "khuê mỹ đông": [16.0333, 108.2455],
+        "tran duc thong": [16.0748, 108.2433],
+        "ngu hanh son": [16.0359, 108.2410],
+        "my an": [16.0485, 108.2435],
+        "son tra": [16.0700, 108.2300],
+        "an thuong": [16.0515, 108.2450]
+    }
 
-    print(f"✅ Файл '{csv_file}' найден. Обработка...")
-
-    try:
-        df = pd.read_csv(csv_file)
-        apartments = []
+    for index, row in df.iterrows():
+        full_text = " ".join([str(val) for val in row.values if isinstance(val, str) and "http" not in val]).lower()
         
-        for index, row in df.iterrows():
-            # Извлекаем текст из твоей колонки html-span
-            description = str(row.get('html-span', ''))
-            
-            # Извлекаем картинку из твоей колонки xz74otr src
-            image = row.get('xz74otr src')
-            
-            # Извлекаем ссылку на пост
-            link = row.get('x1i10hfl href')
-
-            # Простой парсинг цены (ищем цифры + млн или $)
-            price_match = re.search(r'(\d+[\d\s,.]*(?:million|VND|k|\$))', description, re.I)
-            price = price_match.group(1) if price_match else "Contact for price"
-
-            apartments.append({
-                "id": index,
-                "price": price,
-                "description": description[:200] + "...",
-                "image_url": image if pd.notnull(image) else None,
-                "original_link": link if pd.notnull(link) else "#",
-                "district": "Ngu Hanh Son",
-                "lat": 16.0544 + (index * 0.0012),
-                "lng": 108.2022 + (index * 0.0012),
-                "rooms": "Check description",
-                "features": ["AC", "WiFi"]
-            })
-
-        with open(output_json, 'w', encoding='utf-8') as f:
-            json.dump(apartments, f, ensure_ascii=False, indent=4)
+        images = []
+        for col in df.columns:
+            val = str(row[col])
+            if "scontent" in val and "fbcdn" in val and val not in images:
+                images.append(val)
         
-        print(f"🚀 ГОТОВО! Создано {len(apartments)} объектов в {output_json}")
+        if not images:
+            images = ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400"]
 
-    except Exception as e:
-        print(f"❌ Произошла ошибка: {e}")
+        # Поиск координат по улицам
+        coords = [16.0544, 108.2022] # Дефолт
+        for street, point in STREET_COORDS.items():
+            if street in full_text:
+                coords = point
+                break
+        
+        # Разброс, чтобы маркеры не накладывались
+        lat = coords[0] + (index % 30 * 0.0002)
+        lng = coords[1] + (index % 30 * 0.0002)
 
-if __name__ == "__main__":
-    clean_data()
-    
+        apartments.append({
+            "id": index,
+            "price": "See details",
+            "description": full_text[:160] + "...",
+            "images": images,
+            "lat": lat,
+            "lng": lng,
+            "original_link": str(row.get('x1i10hfl href', '#'))
+        })
+
+    with open('src/apartments_data.json', 'w', encoding='utf-8') as f:
+        json.dump(apartments, f, ensure_ascii=False, indent=4)
+    print(f"✅ База готова. Объектов: {len(apartments)}")
+
+clean_data()
