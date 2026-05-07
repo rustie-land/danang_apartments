@@ -8,16 +8,13 @@ def clean_data():
     output_json = 'src/apartments_data.json'
 
     if not os.path.exists(csv_file):
-        print("❌ Ошибка: Файл data.csv не найден в корне проекта!")
+        print("❌ Файл data.csv не найден!")
         return
-
-    if not os.path.exists('src'):
-        os.makedirs('src')
 
     df = pd.read_csv(csv_file)
     apartments = []
 
-    # Словарь координат популярных локаций Дананга
+    # Координаты улиц (можно расширять)
     STREET_COORDS = {
         "khuê mỹ đông": [16.0333, 108.2455],
         "tran duc thong": [16.0748, 108.2433],
@@ -32,50 +29,65 @@ def clean_data():
     }
 
     for index, row in df.iterrows():
-        # Текст поста
+        # Собираем текст
         full_text = " ".join([str(val) for val in row.values if isinstance(val, str) and "http" not in val])
         
-        # Собираем фото
+        # --- ПАРСИНГ ТЕЛЕФОНА (Агрессивный) ---
+        # 1. Заменяем возможные буквы O на цифры 0 (частая уловка)
+        text_for_phone = full_text.replace('O', '0').replace('o', '0')
+        # 2. Ищем последовательность из 9-11 цифр, игнорируя пробелы, точки и дефисы
+        # Находит и 0905.123.456 и 090 555 11 22
+        phone_match = re.search(r'(0[0-9]{1,2}[\s.-]?[0-9]{3}[\s.-]?[0-9]{3,4})', text_for_phone)
+        phone = phone_match.group(0).strip() if phone_match else "Contact in FB"
+
+        # --- ПАРСИНГ ЦЕНЫ ---
+        # Ищем форматы: 10tr, 10 million, 500$, 15.000.000
+        text_l = full_text.lower()
+        price_match = re.search(r'(\d+[\d\s,.]*(?:million|vnd|tr|mln|k|\$))', text_l)
+        
+        if price_match:
+            price = price_match.group(1).upper()
+        else:
+            # Попытка найти просто большие числа (миллионы)
+            large_number = re.search(r'(\d{1,2}[.,]\d{3}[.,]\d{3})', text_l)
+            price = large_number.group(1) + " VND" if large_number else "Check post"
+
+        # --- КАРТИНКИ ---
         images = []
         for col in df.columns:
             val = str(row[col])
             if "scontent" in val and "fbcdn" in val and val not in images:
                 images.append(val)
-        
         if not images:
             images = ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800"]
 
-        # Координаты (по умолчанию - центр города)
-        coords = [16.0544, 108.2022] 
-        text_lower = full_text.lower()
+        # --- КООРДИНАТЫ ---
+        coords = [16.0544, 108.2022] # Дефолт
         for street, point in STREET_COORDS.items():
-            if street in text_lower:
+            if street in text_l:
                 coords = point
                 break
         
-        # Умный разброс (jitter), чтобы маркеры не накладывались
-        lat = coords[0] + (index % 50 * 0.0004)
-        lng = coords[1] + (index % 50 * 0.0004)
-
-        # Парсинг цены (упрощенный)
-        price_match = re.search(r'(\d+[\d\s,.]*(?:million|vnd|k|\$))', text_lower)
-        price = price_match.group(1).upper() if price_match else "Contact"
+        # Добавляем случайное смещение, чтобы маркеры не накладывались
+        lat = coords[0] + (index * 0.0002)
+        lng = coords[1] + (index * 0.0002)
 
         apartments.append({
             "id": index,
             "price": price,
+            "phone": phone,
             "description": full_text,
             "images": images,
             "lat": lat,
             "lng": lng,
-            "district": "Da Nang",
             "original_link": str(row.get('x1i10hfl href', '#'))
         })
 
     with open(output_json, 'w', encoding='utf-8') as f:
         json.dump(apartments, f, ensure_ascii=False, indent=4)
     
-    print(f"✅ База обновлена: {len(apartments)} объектов.")
+    found_phones = sum(1 for a in apartments if a['phone'] != "Contact in FB")
+    print(f"✅ Готово! Найдено телефонов: {found_phones} из {len(apartments)}")
 
 if __name__ == "__main__":
     clean_data()
