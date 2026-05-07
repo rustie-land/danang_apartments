@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import apartmentsData from './apartments_data.json';
+import { supabase } from './supabaseClient';
 
 // --- CUSTOM MARKERS ---
 const defaultIcon = new L.Icon({
@@ -19,13 +19,21 @@ const activeIcon = new L.Icon({
 
 function MapController({ center }) {
   const map = useMap();
-  if (center) map.setView(center, 15, { animate: true });
+  useEffect(() => {
+    if (center) map.setView(center, 15, { animate: true });
+  }, [center, map]);
   return null;
 }
 
-// --- MODAL COMPONENT ---
+// --- MODAL COMPONENT (Полный возврат к оригинальной верстке) ---
 const DetailsModal = ({ apt, onClose }) => {
   if (!apt) return null;
+
+  const getTelegramUrl = (id) => {
+    if (!id) return "#";
+    const parts = id.split('_');
+    return parts.length >= 3 ? `https://t.me/${parts[1]}/${parts[2]}` : "#";
+  };
 
   return (
     <div 
@@ -53,23 +61,30 @@ const DetailsModal = ({ apt, onClose }) => {
             width: '44px', height: '44px', cursor: 'pointer', fontSize: '20px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}
-        >
-          ✕
-        </button>
+        >✕</button>
 
-        {/* IMAGE CAROUSEL */}
-        <div style={{ display: 'flex', overflowX: 'auto', gap: '12px', padding: '20px', background: '#0f172a', scrollSnapType: 'x mandatory' }}>
-          {apt.images && apt.images.map((img, i) => (
-            <img 
-              key={i} 
-              src={img} 
-              style={{ height: '400px', minWidth: '300px', borderRadius: '16px', objectFit: 'cover', flexShrink: 0, scrollSnapAlign: 'center' }} 
-              alt="apartment" 
-            />
-          ))}
+        {/* IMAGE CAROUSEL (Тот самый стиль из 1-й итерации) */}
+        <div style={{ 
+          display: 'flex', overflowX: 'auto', gap: '12px', padding: '20px', 
+          background: '#0f172a', scrollSnapType: 'x mandatory' 
+        }}>
+          {apt.image_urls && apt.image_urls.length > 0 ? (
+            apt.image_urls.map((img, i) => (
+              <img 
+                key={i} 
+                src={img} 
+                style={{ height: '400px', minWidth: '300px', borderRadius: '16px', objectFit: 'cover', flexShrink: 0, scrollSnapAlign: 'center' }} 
+                alt="apartment" 
+              />
+            ))
+          ) : (
+            <div style={{ height: '400px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+              No Images Available
+            </div>
+          )}
         </div>
 
-        {/* CONTENT */}
+        {/* CONTENT (Восстановленная структура) */}
         <div style={{ padding: '32px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
             <div style={{ 
@@ -79,17 +94,18 @@ const DetailsModal = ({ apt, onClose }) => {
             </div>
             
             <a 
-              href={apt.link} 
+              href={getTelegramUrl(apt.original_url)} 
               target="_blank" 
               rel="noreferrer" 
-              style={{ padding: '14px 28px', background: '#1877F2', color: 'white', borderRadius: '14px', textDecoration: 'none', fontWeight: '700', fontSize: '16px' }}
+              style={{ 
+                padding: '14px 28px', background: '#1877F2', color: 'white', 
+                borderRadius: '14px', textDecoration: 'none', fontWeight: '700', fontSize: '16px' 
+              }}
             >
-              View on Facebook
+              View on Telegram
             </a>
           </div>
 
-          <p style={{ fontSize: '20px', fontWeight: '700', color: '#475569', marginTop: '20px' }}>📞 {apt.phone}</p>
-          
           <div style={{ marginTop: '24px', borderTop: '1px solid #f1f5f9', paddingTop: '24px' }}>
             <p style={{ 
               fontSize: '17px', lineHeight: '1.8', color: '#334155', 
@@ -104,20 +120,34 @@ const DetailsModal = ({ apt, onClose }) => {
   );
 };
 
-// --- MAIN APP ---
+// --- MAIN APP (Восстановленный Side-by-Side UI) ---
 export default function App() {
+  const [apartments, setApartments] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    async function fetchData() {
+      const { data, error } = await supabase
+        .from('apartments')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error) setApartments(data || []);
+      setLoading(false);
+    }
+    fetchData();
+
     const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const isMobile = windowWidth < 768;
-  const activeApt = apartmentsData.find(a => a.id === selectedId);
+  const activeApt = apartments.find(a => a.id === selectedId);
+
+  if (loading) return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
 
   return (
     <div style={{ 
@@ -135,7 +165,7 @@ export default function App() {
         <MapContainer center={[16.0544, 108.2422]} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
           <MapController center={activeApt ? [activeApt.lat, activeApt.lng] : null} />
-          {apartmentsData.map(apt => (
+          {apartments.map(apt => (
             <Marker 
               key={apt.id} 
               position={[apt.lat, apt.lng]} 
@@ -146,7 +176,7 @@ export default function App() {
         </MapContainer>
       </div>
 
-      {/* SIDEBAR / MOBILE LIST */}
+      {/* SIDEBAR (Оригинальный стиль из первого кода) */}
       <div style={{ 
         width: isMobile ? '100%' : '440px',
         height: isMobile ? 'auto' : '100%',
@@ -157,9 +187,9 @@ export default function App() {
         pointerEvents: 'none'
       }}>
         {!isMobile && (
-          <div style={{ padding: '30px', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ padding: '30px', borderBottom: '1px solid #f1f5f9', background: 'white', pointerEvents: 'auto' }}>
             <h1 style={{ fontSize: '24px', fontWeight: '800', margin: 0, color: '#0f172a' }}>Da Nang Rentals 🌴</h1>
-            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Found {apartmentsData.length} listings</p>
+            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Found {apartments.length} listings</p>
           </div>
         )}
 
@@ -172,7 +202,7 @@ export default function App() {
           WebkitOverflowScrolling: 'touch',
           height: isMobile ? 'auto' : 'calc(100vh - 100px)'
         }}>
-          {apartmentsData.map(apt => (
+          {apartments.map(apt => (
             <div 
               key={apt.id} 
               onClick={() => { setSelectedId(apt.id); setShowModal(true); }}
@@ -185,7 +215,11 @@ export default function App() {
                 scrollSnapAlign: 'center', transition: 'transform 0.2s ease'
               }}
             >
-              <img src={apt.images[0]} style={{ width: '100%', height: isMobile ? '160px' : '220px', objectFit: 'cover' }} alt="preview" />
+              <img 
+                src={apt.image_urls && apt.image_urls[0] ? apt.image_urls[0] : 'https://via.placeholder.com/400x300'} 
+                style={{ width: '100%', height: isMobile ? '160px' : '220px', objectFit: 'cover' }} 
+                alt="preview" 
+              />
               <div style={{ padding: '20px' }}>
                 <div style={{ 
                   background: '#eff6ff', color: '#1e40af', padding: '6px 12px', 
@@ -194,7 +228,7 @@ export default function App() {
                   {apt.price}
                 </div>
                 <div style={{ fontSize: '14px', color: '#475569', marginTop: '10px', lineHeight: '1.5' }}>
-                  {apt.description.substring(0, 80)}...
+                  {apt.description.substring(0, 120)}...
                 </div>
               </div>
             </div>
