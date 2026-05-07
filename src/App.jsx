@@ -13,11 +13,25 @@ const defaultIcon = new L.Icon({
 const DANANG_BOUNDS = [[15.90, 107.90], [16.25, 108.55]];
 const fmt = (val) => new Intl.NumberFormat('de-DE').format(val);
 
+// УЛУЧШЕННЫЙ ПАРСЕР: теперь понимает "18,5 million", "18.5 mln" и т.д.
 const getCleanPrice = (apt) => {
-  const desc = apt.description || "";
+  const desc = (apt.description || "").toLowerCase();
+  
+  // 1. Ищем паттерн "число + million/mln" (поддерживает запятую и точку)
+  const millionRegex = /(\d+(?:[.,]\d+)?)\s*(?:million|mln|млн)/i;
+  const millionMatch = desc.match(millionRegex);
+  
+  if (millionMatch) {
+    let val = millionMatch[1].replace(',', '.'); // меняем запятую на точку для JS
+    return parseFloat(val) * 1000000;
+  }
+
+  // 2. Стандартный поиск длинных чисел (например, 18.500.000)
   const priceRegex = /(?:price|💰|vnd)\s*[:*-]*\s*([\d\s.,]{5,15})/i;
   const match = desc.match(priceRegex);
   if (match) return parseInt(match[1].replace(/[^\d]/g, ''), 10);
+  
+  // 3. Фолбэк на колонку numeric_price
   let num = parseFloat(apt.numeric_price);
   if (!num) return 0;
   return num < 1000 ? num * 1000000 : num;
@@ -63,7 +77,6 @@ export default function App() {
         const { data, error } = await supabase.from('apartments').select('*').order('created_at', { ascending: false });
         if (error) throw error;
         if (data) {
-          // Убираем те, где цена не определена
           const validApts = data.filter(apt => getCleanPrice(apt) > 0);
           setApartments(validApts);
 
@@ -72,7 +85,7 @@ export default function App() {
             const minP = Math.min(...prices);
             const maxP = Math.max(...prices);
             setPriceBounds({ min: minP, max: maxP });
-            setMaxPriceFilter(maxP); // Ставим ползунок на максимум при загрузке
+            setMaxPriceFilter(maxP);
           }
 
           const commonWords = ['pool', 'gym', 'pet', 'sea', 'beach', 'balcony', 'kitchen', 'studio', 'modern'];
@@ -93,16 +106,13 @@ export default function App() {
     return apartments.filter(a => {
       const price = getCleanPrice(a);
       const desc = (a.description || "").toLowerCase();
-      
       const matchesTags = selectedTags.every(tag => desc.includes(tag));
       const matchesPrice = price >= priceBounds.min && price <= maxPriceFilter;
-      
       let matchesType = true;
       if (propertyType === 'studio') matchesType = a.rooms === 0 || desc.includes('studio');
       else if (propertyType === '1br') matchesType = a.rooms === 1;
       else if (propertyType === '2br') matchesType = a.rooms === 2;
       else if (propertyType === '3plus') matchesType = a.rooms >= 3 || /house|villa|3 bedroom/i.test(desc);
-      
       return matchesTags && matchesPrice && matchesType;
     });
   }, [apartments, selectedTags, maxPriceFilter, propertyType, priceBounds.min]);
@@ -130,14 +140,12 @@ export default function App() {
               <input type="range" min={priceBounds.min} max={priceBounds.max} step={500000} value={maxPriceFilter} onChange={(e) => setMaxPriceFilter(parseInt(e.target.value))} style={styles.slider} />
               <span style={styles.priceLimit}>{fmt(priceBounds.max / 1000000)}M</span>
             </div>
-            
             <div style={{...styles.sectionLabel, marginTop: '20px'}}>Type</div>
             <div style={styles.chipScroll}>
               {['all', 'studio', '1br', '2br', '3plus'].map(t => (
                 <button key={t} onClick={() => setPropertyType(t)} style={{ ...styles.chip, backgroundColor: propertyType === t ? '#1d1d1f' : '#f5f5f7', color: propertyType === t ? '#fff' : '#1d1d1f' }}>{t.toUpperCase()}</button>
               ))}
             </div>
-
             <div style={styles.tagGrid}>
               {dynamicTags.map(tag => (
                 <button key={tag} onClick={() => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
@@ -145,7 +153,6 @@ export default function App() {
               ))}
             </div>
           </div>
-
           <div style={styles.list}>
             {filteredApts.map(apt => (
               <div key={apt.id} onClick={() => setSelectedApt(apt)} style={styles.card}>
