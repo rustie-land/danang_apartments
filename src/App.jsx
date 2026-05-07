@@ -9,31 +9,43 @@ const defaultIcon = new L.Icon({
   iconSize: [25, 41], iconAnchor: [12, 41]
 });
 
-const displayPrice = (apt) => {
-  let val = parseFloat(apt.numeric_price);
-  if (!val) return "Price on request";
-  let num = val < 1000 ? val * 1000000 : val;
-  return new Intl.NumberFormat('de-DE').format(num);
+// --- ЖЕЛЕЗОБЕТОННЫЙ ПАРСЕР ЦЕН ---
+const getAptPrice = (apt) => {
+  const desc = apt.description || "";
+  // Ищем в тексте шаблоны: 15.000.000, 15,000,000 или просто 15000000
+  const priceRegex = /(?:price|💰|vnd)\s*[:*-]*\s*([\d\s.,]{5,15})/i;
+  const match = desc.match(priceRegex);
+
+  let finalValue = 0;
+
+  if (match) {
+    // Оставляем только цифры
+    finalValue = parseInt(match[1].replace(/[^\d]/g, ''), 10);
+  } else {
+    // Если в тексте нет, берем numeric_price
+    let num = parseFloat(apt.numeric_price);
+    if (!num) return "Price on request";
+    finalValue = num < 1000 ? num * 1000000 : num;
+  }
+
+  return new Intl.NumberFormat('de-DE').format(finalValue) + ' VND';
 };
 
-// Список популярных тегов для Дананга
 const PRESET_TAGS = [
   { id: 'pool', label: '🏊‍♂️ Pool' },
   { id: 'gym', label: '💪 Gym' },
-  { id: 'pet', label: '🐾 Pet Friendly' },
+  { id: 'pet', label: '🐾 Pet' },
   { id: 'sea', label: '🌊 Sea View' },
-  { id: 'beach', label: '🏖 Near Beach' },
-  { id: 'balcony', label: '🖼 Balcony' },
-  { id: 'kitchen', label: '🍳 Kitchen' },
-  { id: 'modern', label: '✨ Modern' },
+  { id: 'beach', label: '🏖 Beach' },
+  { id: 'balcony', label: '🖼 Balcony' }
 ];
 
 export default function App() {
   const [apartments, setApartments] = useState([]);
   const [tagSearch, setTagSearch] = useState('');
-  const [selectedTags, setSelectedTags] = useState([]); // Массив выбранных тегов
+  const [selectedTags, setSelectedTags] = useState([]);
   const [priceRange, setPriceRange] = useState(null);
-  const [propertyType, setPropertyType] = useState('all'); 
+  const [propertyType, setPropertyType] = useState('all');
   const [selectedApt, setSelectedApt] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -42,7 +54,8 @@ export default function App() {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     async function fetchData() {
-      const { data } = await supabase.from('apartments').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('apartments').select('*').order('created_at', { ascending: false });
+      if (error) console.error("Supabase Error:", error);
       if (data) setApartments(data);
     }
     fetchData();
@@ -52,39 +65,23 @@ export default function App() {
   const filteredApts = useMemo(() => {
     return apartments.filter(a => {
       const desc = (a.description || "").toLowerCase();
-      
-      // 1. Поиск по строке (если пользователь все же что-то ввел руками)
       const matchesSearch = tagSearch === '' || desc.includes(tagSearch.toLowerCase());
-      
-      // 2. Поиск по ВЫБРАННЫМ ТЕГАМ (должны совпасть все выбранные)
       const matchesTags = selectedTags.every(tagId => desc.includes(tagId));
-
-      // 3. Поиск по типу жилья
+      
       let matchesType = true;
       if (propertyType === 'studio') matchesType = a.rooms === 0 || desc.includes('studio');
       else if (propertyType === '1br') matchesType = a.rooms === 1;
       else if (propertyType === '2br') matchesType = a.rooms === 2;
-      else if (propertyType === '3plus') {
-        matchesType = a.rooms >= 3 || desc.includes('3 bedroom') || desc.includes('house') || desc.includes('villa');
-      }
+      else if (propertyType === '3plus') matchesType = a.rooms >= 3 || /house|villa|3 bedroom/i.test(desc);
 
-      // 4. Поиск по цене
       let matchesPrice = true;
       if (priceRange) {
         const val = a.numeric_price < 1000 ? a.numeric_price * 1000000 : a.numeric_price;
         matchesPrice = val >= priceRange.min && val <= priceRange.max;
       }
-
       return matchesSearch && matchesTags && matchesType && matchesPrice;
     });
   }, [apartments, tagSearch, selectedTags, propertyType, priceRange]);
-
-  // Функция переключения тега
-  const toggleTag = (tagId) => {
-    setSelectedTags(prev => 
-      prev.includes(tagId) ? prev.filter(t => t !== tagId) : [...prev, tagId]
-    );
-  };
 
   const sidebarWidth = isMobile ? window.innerWidth * 0.88 : 420;
 
@@ -103,49 +100,18 @@ export default function App() {
         <div style={{ ...styles.sidebar, width: sidebarWidth }}>
           <div style={styles.sidebarHeader}>
             <h2 style={styles.title}>Da Nang Finder 🌴</h2>
-            
-            {/* ТИП ЖИЛЬЯ */}
-            <div style={styles.sectionLabel}>Property Type</div>
+            <div style={styles.sectionLabel}>Price & Type</div>
             <div style={styles.chipScroll}>
-              {[{id: 'all', label: 'All'}, {id: 'studio', label: 'Studio'}, {id: '1br', label: '1 BR'}, {id: '2br', label: '2 BR'}, {id: '3plus', label: '3BR+ / House'}].map(t => (
-                <button key={t.id} onClick={() => setPropertyType(t.id)} 
-                  style={{ ...styles.chip, backgroundColor: propertyType === t.id ? '#1d1d1f' : '#f5f5f7', color: propertyType === t.id ? '#fff' : '#1d1d1f' }}>
-                  {t.label}
-                </button>
+              {[{id:'all', label:'All'}, {id:'studio', label:'Studio'}, {id:'1br', label:'1BR'}, {id:'2br', label:'2BR'}, {id:'3plus', label:'3BR+/House'}].map(t => (
+                <button key={t.id} onClick={() => setPropertyType(t.id)} style={{ ...styles.chip, backgroundColor: propertyType === t.id ? '#1d1d1f' : '#f5f5f7', color: propertyType === t.id ? '#fff' : '#1d1d1f' }}>{t.label}</button>
               ))}
             </div>
-
-            {/* ЦЕНЫ */}
-            <div style={styles.sectionLabel}>Price Range</div>
-            <div style={styles.chipScroll}>
-              {[{label: 'Any', min: 0, max: Infinity}, {label: '8-12M', min: 8000000, max: 12000000}, {label: '13-17M', min: 13000000, max: 17000000}, {label: '18-22M', min: 18000000, max: 22000000}, {label: '25M+', min: 25000000, max: 999M}].map(r => (
-                <button key={r.label} onClick={() => setPriceRange(r.max === Infinity ? null : r)} 
-                  style={{ ...styles.chip, backgroundColor: (priceRange?.label === r.label || (!priceRange && r.label === 'Any')) ? '#1d1d1f' : '#f5f5f7', color: (priceRange?.label === r.label || (!priceRange && r.label === 'Any')) ? '#fff' : '#1d1d1f' }}>
-                  {r.label}
-                </button>
-              ))}
-            </div>
-
-            {/* ВЫБОР ТЕГОВ (NEW!) */}
-            <div style={styles.sectionLabel}>Amenities & Features</div>
             <div style={styles.tagGrid}>
               {PRESET_TAGS.map(tag => (
-                <button 
-                  key={tag.id} 
-                  onClick={() => toggleTag(tag.id)}
-                  style={{ 
-                    ...styles.tagBtn, 
-                    backgroundColor: selectedTags.includes(tag.id) ? '#007AFF' : '#fff',
-                    color: selectedTags.includes(tag.id) ? '#fff' : '#1d1d1f',
-                    borderColor: selectedTags.includes(tag.id) ? '#007AFF' : '#e2e2e7'
-                  }}
-                >
-                  {tag.label}
-                </button>
+                <button key={tag.id} onClick={() => setSelectedTags(prev => prev.includes(tag.id) ? prev.filter(t => t !== tag.id) : [...prev, tag.id])}
+                  style={{ ...styles.tagBtn, backgroundColor: selectedTags.includes(tag.id) ? '#007AFF' : '#fff', color: selectedTags.includes(tag.id) ? '#fff' : '#1d1d1f', borderColor: '#e2e2e7' }}>{tag.label}</button>
               ))}
             </div>
-
-            <input type="text" placeholder="Other keywords..." value={tagSearch} onChange={(e) => setTagSearch(e.target.value)} style={styles.tagInput} />
           </div>
 
           <div style={styles.list}>
@@ -153,26 +119,47 @@ export default function App() {
               <div key={apt.id} onClick={() => setSelectedApt(apt)} style={styles.card}>
                 <img src={apt.image_urls?.[0]} style={styles.cardImg} alt="apt" />
                 <div style={{ padding: '18px' }}>
-                  <div style={styles.priceText}>{displayPrice(apt)} VND</div>
-                  <div style={styles.descriptionText}>📍 {apt.description?.substring(0, 65)}...</div>
+                  <div style={styles.priceText}>{getAptPrice(apt)}</div>
+                  <div style={styles.descriptionText}>📍 {apt.description?.substring(0, 60)}...</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-
         <div style={styles.pillContainer}>
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={styles.macPill}>
-            <span style={styles.pillIcon}>{isSidebarOpen ? '←' : '→'}</span>
-            <span style={styles.pillText}>{isSidebarOpen ? 'MAP' : 'BACK'}</span>
+            <span>{isSidebarOpen ? '← MAP' : '→ BACK'}</span>
           </button>
         </div>
       </div>
 
-      {/* MODAL (остается без изменений из прошлого ответа) */}
+      {/* MODAL WITH CAROUSEL */}
       {selectedApt && (
         <div style={styles.overlay} onClick={() => setSelectedApt(null)}>
-           {/* ... код модалки из предыдущего ответа ... */}
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <div style={styles.modalScrollContent}>
+              {/* КАРУСЕЛЬ ФОТОГРАФИЙ */}
+              <div style={styles.carouselContainer}>
+                {selectedApt.image_urls?.map((url, i) => (
+                  <img key={i} src={url} style={styles.carouselImg} alt={`view-${i}`} />
+                ))}
+              </div>
+              
+              <div style={{ padding: '25px' }}>
+                <h2 style={styles.modalPrice}>{getAptPrice(selectedApt)}</h2>
+                <div style={styles.modalDesc}>{selectedApt.description}</div>
+                <div style={styles.miniMapWrapper}>
+                  <MapContainer center={[selectedApt.lat, selectedApt.lng]} zoom={15} zoomControl={false} dragging={false} style={{ height: '100%' }}>
+                    <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                    <Marker position={[selectedApt.lat, selectedApt.lng]} icon={defaultIcon} />
+                  </MapContainer>
+                </div>
+              </div>
+            </div>
+            <div style={styles.modalFooter}>
+               <button onClick={() => setSelectedApt(null)} style={styles.appleCloseBtn}>Done</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -180,29 +167,35 @@ export default function App() {
 }
 
 const styles = {
-  // ... (предыдущие стили)
   container: { display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative', background: '#000' },
   mapWrapper: { position: 'absolute', inset: 0, zIndex: 1 },
-  sidebarWrapper: { position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'center', transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)' },
-  sidebar: { height: '100vh', background: 'rgba(255, 255, 255, 0.98)', backdropFilter: 'blur(20px)', boxShadow: '0 0 40px rgba(0,0,0,0.1)', overflowY: 'auto' },
+  sidebarWrapper: { position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'center', transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' },
+  sidebar: { height: '100vh', background: 'rgba(255, 255, 255, 0.98)', backdropFilter: 'blur(20px)', overflowY: 'auto' },
+  
+  // КАРУСЕЛЬ
+  carouselContainer: { display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', height: '300px', background: '#eee', scrollbarWidth: 'none' },
+  carouselImg: { flex: '0 0 100%', width: '100%', height: '300px', objectFit: 'cover', scrollSnapAlign: 'start' },
+
   pillContainer: { paddingLeft: '12px' },
-  macPill: { background: 'rgba(29, 29, 31, 0.9)', backdropFilter: 'blur(10px)', border: '0.5px solid rgba(255,255,255,0.2)', borderRadius: '20px', padding: '10px 18px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
-  pillIcon: { fontSize: '14px', fontWeight: 'bold' },
-  pillText: { fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px' },
-  sidebarHeader: { padding: '40px 24px 15px' },
-  title: { margin: '0 0 25px 0', fontWeight: '700', fontSize: '26px', color: '#1d1d1f' },
-  sectionLabel: { fontSize: '10px', fontWeight: '800', color: '#86868b', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '1px' },
-  chipScroll: { display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '20px', paddingBottom: '5px', scrollbarWidth: 'none' },
-  chip: { padding: '8px 16px', borderRadius: '10px', border: 'none', fontSize: '12px', fontWeight: '600', whiteSpace: 'nowrap', cursor: 'pointer' },
-  
-  // НОВАЯ СЕТКА ТЕГОВ
-  tagGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '15px' },
-  tagBtn: { padding: '10px', borderRadius: '12px', border: '1px solid', fontSize: '12px', fontWeight: '600', textAlign: 'left', cursor: 'pointer', transition: '0.2s' },
-  
-  tagInput: { width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: '#f5f5f7', fontSize: '13px', outline: 'none', boxSizing: 'border-box' },
+  macPill: { background: 'rgba(29, 29, 31, 0.9)', border: 'none', borderRadius: '20px', padding: '10px 18px', color: '#fff', cursor: 'pointer', fontWeight: '700', fontSize: '11px' },
+  sidebarHeader: { padding: '40px 24px 10px' },
+  title: { margin: '0 0 20px 0', fontWeight: '700', fontSize: '24px' },
+  sectionLabel: { fontSize: '10px', fontWeight: '800', color: '#86868b', textTransform: 'uppercase', marginBottom: '8px' },
+  chipScroll: { display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '15px' },
+  chip: { padding: '8px 14px', borderRadius: '10px', border: 'none', fontSize: '12px', fontWeight: '600' },
+  tagGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' },
+  tagBtn: { padding: '10px', borderRadius: '12px', border: '1px solid', fontSize: '11px', fontWeight: '600', textAlign: 'left' },
   list: { padding: '0 24px 100px' },
-  card: { background: '#fff', borderRadius: '20px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f5f5f7' },
-  cardImg: { width: '100%', height: '200px', objectFit: 'cover' },
-  priceText: { fontSize: '20px', fontWeight: '700', color: '#1d1d1f' },
-  descriptionText: { fontSize: '13px', color: '#86868b', marginTop: '4px' }
+  card: { background: '#fff', borderRadius: '20px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
+  cardImg: { width: '100%', height: '180px', objectFit: 'cover' },
+  priceText: { fontSize: '20px', fontWeight: '700' },
+  descriptionText: { fontSize: '12px', color: '#86868b' },
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' },
+  modal: { background: '#fff', width: '92%', maxWidth: '450px', borderRadius: '25px', overflow: 'hidden', maxHeight: '88vh', display: 'flex', flexDirection: 'column' },
+  modalScrollContent: { overflowY: 'auto', flex: 1 },
+  modalPrice: { fontSize: '24px', fontWeight: '700' },
+  modalDesc: { fontSize: '15px', lineHeight: '1.6', color: '#1d1d1f', whiteSpace: 'pre-wrap' },
+  miniMapWrapper: { height: '180px', borderRadius: '20px', overflow: 'hidden', marginTop: '20px' },
+  modalFooter: { padding: '15px 25px 25px' },
+  appleCloseBtn: { width: '100%', padding: '16px', background: '#007AFF', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: '600' }
 };
