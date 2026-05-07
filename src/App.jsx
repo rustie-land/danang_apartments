@@ -39,8 +39,15 @@ export default function App() {
   const [filters, setFilters] = useState({ rooms: '', maxPrice: '' });
   const [hoveredId, setHoveredId] = useState(null);
   const [selectedApt, setSelectedApt] = useState(null);
+  
+  // Состояние для мобильного вида: 'list' или 'map'
+  const [mobileView, setMobileView] = useState('list');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    
     async function fetchData() {
       const { data } = await supabase.from('apartments').select('*').order('created_at', { ascending: false });
       if (data) {
@@ -70,11 +77,8 @@ export default function App() {
       }
     }
     fetchData();
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  const visibleTags = useMemo(() => {
-    return dynamicKeywords.filter(tag => tag.includes(tagSearch.toLowerCase()));
-  }, [dynamicKeywords, tagSearch]);
 
   const filteredApts = useMemo(() => {
     return apartments.filter(a => {
@@ -89,20 +93,29 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      {/* САЙДБАР ТЕПЕРЬ СКРОЛЛИТСЯ ВЕСЬ */}
-      <div style={styles.sidebar}>
+      {/* КНОПКА ПЕРЕКЛЮЧЕНИЯ ДЛЯ МОБИЛОК */}
+      {isMobile && (
+        <button 
+          onClick={() => setMobileView(mobileView === 'list' ? 'map' : 'list')}
+          style={styles.mobileToggle}
+        >
+          {mobileView === 'list' ? '📍 Show Map' : '📋 Show List'}
+        </button>
+      )}
+
+      {/* САЙДБАР (СКРЫВАЕТСЯ НА МОБИЛКАХ ЕСЛИ ВЫБРАНА КАРТА) */}
+      <div style={{ 
+        ...styles.sidebar, 
+        display: isMobile && mobileView === 'map' ? 'none' : 'flex' 
+      }}>
         <div style={styles.sidebarContent}>
           <div style={styles.header}>
             <h2 style={styles.title}>Da Nang Finder 🌴</h2>
-            
             <div style={styles.filterBox}>
               <div style={styles.filterHeader}>
                 <span style={styles.label}>Smart Filters</span>
-                {selectedTags.length > 0 && (
-                  <span onClick={() => setSelectedTags([])} style={styles.clearBtn}>Reset</span>
-                )}
+                {selectedTags.length > 0 && <span onClick={() => setSelectedTags([])} style={styles.clearBtn}>Reset</span>}
               </div>
-              
               <input 
                 type="text" 
                 placeholder="Search features..." 
@@ -110,9 +123,8 @@ export default function App() {
                 onChange={(e) => setTagSearch(e.target.value)}
                 style={styles.tagSearchInput}
               />
-
               <div style={styles.tagWrapper}>
-                {visibleTags.map(word => (
+                {dynamicKeywords.filter(t => t.includes(tagSearch.toLowerCase())).map(word => (
                   <button 
                     key={word}
                     onClick={() => setSelectedTags(prev => prev.includes(word) ? prev.filter(t => t !== word) : [...prev, word])}
@@ -128,7 +140,6 @@ export default function App() {
                 ))}
               </div>
             </div>
-
             <div style={styles.filterRow}>
               <select onChange={e => setFilters({...filters, rooms: e.target.value})} style={styles.select}>
                 <option value="">Bedrooms</option>
@@ -136,31 +147,20 @@ export default function App() {
                 <option value="1">1 BR</option>
                 <option value="2">2+ BR</option>
               </select>
-              <input 
-                type="number" 
-                placeholder="Max Price (M)" 
-                onChange={e => setFilters({...filters, maxPrice: e.target.value})} 
-                style={styles.select} 
-              />
+              <input type="number" placeholder="Max Price (M)" onChange={e => setFilters({...filters, maxPrice: e.target.value})} style={styles.select} />
             </div>
           </div>
 
-          {/* СПИСОК КАРТОЧЕК */}
           <div style={styles.list}>
-            <p style={{fontSize: '12px', color: '#94a3b8', marginBottom: '15px'}}>{filteredApts.length} variants found</p>
             {filteredApts.map(apt => (
               <div key={apt.id} 
-                onMouseEnter={() => setHoveredId(apt.id)}
-                onMouseLeave={() => setHoveredId(null)}
-                onClick={() => setSelectedApt(apt)}
+                onClick={() => { setSelectedApt(apt); if(isMobile) setMobileView('list'); }}
                 style={{ ...styles.card, borderColor: hoveredId === apt.id ? '#1877F2' : 'transparent' }}
               >
                 <img src={apt.image_urls?.[0]} style={styles.cardImg} alt="apt" />
                 <div style={{ padding: '20px' }}>
                   <div style={styles.priceText}>{getSmartPrice(apt)}</div>
-                  <div style={styles.descriptionText}>
-                    📍 {apt.description?.split('\n')[0].substring(0, 80)}...
-                  </div>
+                  <div style={styles.descriptionText}>📍 {apt.description?.split('\n')[0].substring(0, 80)}...</div>
                 </div>
               </div>
             ))}
@@ -168,8 +168,11 @@ export default function App() {
         </div>
       </div>
 
-      {/* ФИКСИРОВАННАЯ КАРТА */}
-      <div style={styles.mapWrapper}>
+      {/* КАРТА (СКРЫВАЕТСЯ НА МОБИЛКАХ ЕСЛИ ВЫБРАН СПИСОК) */}
+      <div style={{ 
+        ...styles.mapWrapper, 
+        display: isMobile && mobileView === 'list' ? 'none' : 'block' 
+      }}>
         <MapContainer center={[16.0544, 108.2422]} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
           {filteredApts.map(apt => (
@@ -183,14 +186,15 @@ export default function App() {
         </MapContainer>
       </div>
 
-      {/* МОДАЛЬНОЕ ОКНО */}
+      {/* МОДАЛКА (НА МОБИЛКАХ ОНА НА ВЕСЬ ЭКРАН) */}
       {selectedApt && (
         <div style={styles.overlay} onClick={() => setSelectedApt(null)}>
           <div style={styles.modal} onClick={e => e.stopPropagation()}>
             <img src={selectedApt.image_urls?.[0]} style={styles.modalImg} />
-            <div style={{ padding: '30px' }}>
+            <div style={{ padding: isMobile ? '20px' : '30px' }}>
               <h2 style={styles.modalPrice}>{getSmartPrice(selectedApt)}</h2>
               <p style={styles.modalDesc}>{selectedApt.description}</p>
+              <button onClick={() => setSelectedApt(null)} style={styles.closeBtn}>Close</button>
             </div>
           </div>
         </div>
@@ -200,45 +204,38 @@ export default function App() {
 }
 
 const styles = {
-  container: { display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: '#fff' },
-  
-  // ОСНОВНОЙ СКРОЛЛ ТУТ
-  sidebar: { 
-    width: '420px', 
-    height: '100vh', 
-    overflowY: 'auto', 
-    borderRight: '1px solid #e2e8f0',
-    background: '#fff',
-    zIndex: 10
-  },
-  
+  container: { display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: '#fff', position: 'relative' },
+  sidebar: { width: window.innerWidth < 768 ? '100vw' : '420px', height: '100vh', overflowY: 'auto', borderRight: '1px solid #e2e8f0', background: '#fff', zIndex: 10 },
   sidebarContent: { display: 'flex', flexDirection: 'column' },
   header: { padding: '30px 24px 20px 24px' },
-  title: { margin: '0 0 25px 0', fontWeight: '900', fontSize: '26px', letterSpacing: '-0.5px' },
-  
+  title: { margin: '0 0 25px 0', fontWeight: '900', fontSize: '26px' },
   filterBox: { background: '#f8fafc', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '20px', marginBottom: '20px' },
-  filterHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' },
-  label: { fontSize: '11px', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase' },
+  filterHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '12px' },
+  label: { fontSize: '11px', fontWeight: '800', color: '#94a3b8' },
   clearBtn: { fontSize: '11px', color: '#1877F2', cursor: 'pointer', fontWeight: '700' },
-  
-  tagSearchInput: { width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '15px', outline: 'none', fontSize: '14px' },
+  tagSearchInput: { width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '15px', outline: 'none' },
   tagWrapper: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-  tagButton: { padding: '7px 14px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', border: '1px solid', transition: '0.2s' },
-  
+  tagButton: { padding: '7px 14px', borderRadius: '12px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', border: '1px solid' },
   filterRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
-  select: { padding: '14px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff', fontSize: '14px', outline: 'none' },
-  
-  list: { padding: '0 24px 40px 24px', background: '#fff' },
-  card: { background: '#fff', borderRadius: '28px', overflow: 'hidden', cursor: 'pointer', marginBottom: '25px', border: '3px solid transparent', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', transition: '0.3s' },
+  select: { padding: '14px', borderRadius: '14px', border: '1px solid #e2e8f0', background: '#fff' },
+  list: { padding: '0 24px 80px 24px' },
+  card: { background: '#fff', borderRadius: '28px', overflow: 'hidden', cursor: 'pointer', marginBottom: '25px', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', border: '3px solid transparent' },
   cardImg: { width: '100%', height: '240px', objectFit: 'cover' },
-  priceText: { fontSize: '24px', fontWeight: '900', color: '#0f172a' },
-  descriptionText: { fontSize: '14px', color: '#64748b', marginTop: '6px', lineHeight: '1.5' },
+  priceText: { fontSize: '24px', fontWeight: '900' },
+  descriptionText: { fontSize: '14px', color: '#64748b', marginTop: '6px' },
+  mapWrapper: { flex: 1, height: '100vh', position: 'relative' },
   
-  mapWrapper: { flex: 1, height: '100vh' },
-  
+  // МОБИЛЬНАЯ КНОПКА
+  mobileToggle: { 
+    position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', 
+    zIndex: 100, background: '#1e293b', color: '#fff', padding: '12px 24px', 
+    borderRadius: '30px', fontWeight: '800', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', cursor: 'pointer' 
+  },
+
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' },
-  modal: { background: '#fff', width: '90%', maxWidth: '800px', borderRadius: '35px', overflow: 'hidden', maxHeight: '90vh', overflowY: 'auto' },
-  modalImg: { width: '100%', height: '450px', objectFit: 'cover' },
-  modalPrice: { fontSize: '36px', fontWeight: '900', marginBottom: '20px' },
-  modalDesc: { whiteSpace: 'pre-wrap', padding: '0 30px 40px', color: '#334155', lineHeight: '1.7', fontSize: '16px' }
+  modal: { background: '#fff', width: '95%', maxWidth: '800px', borderRadius: '35px', overflow: 'hidden', maxHeight: '90vh', overflowY: 'auto' },
+  modalImg: { width: '100%', height: '350px', objectFit: 'cover' },
+  modalPrice: { fontSize: '32px', fontWeight: '900', marginBottom: '15px' },
+  modalDesc: { whiteSpace: 'pre-wrap', color: '#334155', lineHeight: '1.7', fontSize: '16px', marginBottom: '20px' },
+  closeBtn: { width: '100%', padding: '15px', background: '#f1f5f9', border: 'none', borderRadius: '15px', fontWeight: '700', cursor: 'pointer' }
 };
