@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -48,84 +48,35 @@ const DetailsModal = ({ apt, onClose }) => {
 export default function App() {
   const [selectedId, setSelectedId] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const isMobile = window.innerWidth < 768;
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isMobile = windowWidth < 768;
   const activeApt = apartmentsData.find(a => a.id === selectedId);
 
-  // Стили для контейнеров (адаптивность)
-  const containerStyle = {
-    display: 'flex',
-    flexDirection: isMobile ? 'column-reverse' : 'row',
-    height: '100vh',
-    width: '100vw',
-    overflow: 'hidden'
-  };
-
-  const sidebarStyle = {
-    width: isMobile ? '100%' : '400px',
-    height: isMobile ? '35%' : '100%',
-    overflowY: isMobile ? 'hidden' : 'auto',
-    overflowX: isMobile ? 'auto' : 'hidden',
-    display: isMobile ? 'flex' : 'block',
-    padding: '15px',
-    background: isMobile ? 'transparent' : 'white',
-    zIndex: 1000,
-    borderRight: isMobile ? 'none' : '1px solid #eee',
-    position: isMobile ? 'absolute' : 'relative',
-    bottom: 0,
-    pointerEvents: 'none' // Чтобы можно было кликать на карту "сквозь" пустые места
-  };
-
-  const cardStyle = (apt) => ({
-    borderRadius: '16px',
-    border: '1px solid #eee',
-    marginBottom: isMobile ? '0' : '15px',
-    marginRight: isMobile ? '15px' : '0',
-    minWidth: isMobile ? '280px' : 'auto',
-    width: isMobile ? '280px' : '100%',
-    height: isMobile ? '140px' : 'auto',
-    overflow: 'hidden',
-    cursor: 'pointer',
-    background: 'white',
-    display: 'flex',
-    flexDirection: isMobile ? 'row' : 'column',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-    pointerEvents: 'auto'
-  });
-
   return (
-    <div style={containerStyle}>
-      {/* Список квартир */}
-      <div style={sidebarStyle}>
-        {!isMobile && <h1 style={{ padding: '10px', fontSize: '20px' }}>Da Nang Rentals 🌴</h1>}
-        <div style={{ display: isMobile ? 'flex' : 'block', paddingBottom: isMobile ? '20px' : '0' }}>
-          {apartmentsData.map(apt => (
-            <div 
-              key={apt.id} 
-              onClick={() => { setSelectedId(apt.id); setShowModal(true); }}
-              style={cardStyle(apt)}
-            >
-              <img 
-                src={apt.images[0]} 
-                style={{ 
-                  width: isMobile ? '100px' : '100%', 
-                  height: isMobile ? '140px' : '180px', 
-                  objectFit: 'cover' 
-                }} 
-              />
-              <div style={{ padding: '12px', flex: 1 }}>
-                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e40af' }}>{apt.price}</div>
-                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                  {apt.description.substring(0, isMobile ? 40 : 80)}...
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Карта */}
-      <div style={{ flex: 1, height: '100%', width: '100%' }}>
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: isMobile ? 'column' : 'row', 
+      height: '100vh', 
+      width: '100vw', 
+      overflow: 'hidden',
+      position: 'relative'
+    }}>
+      {/* Карта (на мобилках фон) */}
+      <div style={{ 
+        flex: 1, 
+        height: isMobile ? '100%' : '100%', 
+        width: '100%',
+        position: 'absolute',
+        top: 0,
+        left: 0
+      }}>
         <MapContainer center={[16.0544, 108.2422]} zoom={13} style={{ height: '100%', width: '100%' }}>
           <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
           <MapController center={activeApt ? [activeApt.lat, activeApt.lng] : null} />
@@ -138,6 +89,64 @@ export default function App() {
             />
           ))}
         </MapContainer>
+      </div>
+
+      {/* Сайдбар / Нижняя лента */}
+      <div style={{ 
+        width: isMobile ? '100%' : '400px',
+        height: isMobile ? 'auto' : '100%',
+        position: isMobile ? 'absolute' : 'relative',
+        bottom: 0,
+        left: 0,
+        zIndex: 1000,
+        background: isMobile ? 'transparent' : 'white',
+        borderRight: isMobile ? 'none' : '1px solid #eee',
+        pointerEvents: 'none' // Пропускает клики на карту в пустых зонах
+      }}>
+        {!isMobile && (
+          <div style={{ padding: '20px', borderBottom: '1px solid #eee', background: 'white' }}>
+            <h1 style={{ fontSize: '20px', margin: 0 }}>Da Nang Rentals 🌴</h1>
+          </div>
+        )}
+
+        <div style={{ 
+          display: isMobile ? 'flex' : 'block',
+          overflowX: isMobile ? 'auto' : 'hidden', // ВКЛЮЧАЕМ СКРОЛЛ ДЛЯ МОБИЛОК
+          overflowY: isMobile ? 'hidden' : 'auto',
+          padding: '15px',
+          gap: '15px',
+          pointerEvents: 'auto', // ВКЛЮЧАЕМ КЛИКИ/СКРОЛЛ ДЛЯ КАРТОЧЕК
+          scrollSnapType: isMobile ? 'x mandatory' : 'none',
+          WebkitOverflowScrolling: 'touch'
+        }}>
+          {apartmentsData.map(apt => (
+            <div 
+              key={apt.id} 
+              onClick={() => { setSelectedId(apt.id); setShowModal(true); }}
+              style={{ 
+                borderRadius: '16px', 
+                border: '1px solid #eee', 
+                marginBottom: isMobile ? '0' : '15px',
+                flexShrink: 0, // НЕ ДАЕМ КАРТОЧКАМ СЖИМАТЬСЯ
+                width: isMobile ? '80%' : '100%',
+                maxWidth: isMobile ? '300px' : 'none',
+                overflow: 'hidden', 
+                cursor: 'pointer', 
+                background: 'white',
+                boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                scrollSnapAlign: 'center'
+              }}
+            >
+              <img src={apt.images[0]} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+              <div style={{ padding: '12px' }}>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e40af' }}>{apt.price}</div>
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  {apt.description.substring(0, 60)}...
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {showModal && <DetailsModal apt={activeApt} onClose={() => setShowModal(false)} />}
