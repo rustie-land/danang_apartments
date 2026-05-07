@@ -9,31 +9,22 @@ const defaultIcon = new L.Icon({
   iconSize: [25, 41], iconAnchor: [12, 41]
 });
 
-// --- УЛЬТИМАТИВНЫЙ ПАРСЕР ЦЕН ---
 const displayPrice = (apt) => {
-  const desc = apt.description || "";
-  // 1. Пытаемся найти цену в тексте (💰15.000.000 или Price: 12,000,000)
-  const priceMatch = desc.match(/(?:Price|💰|\$)\s*[:*-]*\s*([\d\s.,]{5,15})/i);
-  
-  let finalNum;
-  if (priceMatch) {
-    finalNum = parseFloat(priceMatch[1].replace(/[^\d]/g, ''));
-  } else {
-    // 2. Если в тексте нет, берем из колонки numeric_price
-    let val = parseFloat(apt.numeric_price);
-    if (!val) return "Price on request";
-    finalNum = val < 1000 ? val * 1000000 : val;
-  }
-
-  return new Intl.NumberFormat('de-DE').format(finalNum) + ' VND';
+  let val = parseFloat(apt.numeric_price);
+  if (!val) return "Price on request";
+  let num = val < 1000 ? val * 1000000 : val;
+  return new Intl.NumberFormat('de-DE').format(num);
 };
 
 export default function App() {
   const [apartments, setApartments] = useState([]);
-  const [dynamicKeywords, setDynamicKeywords] = useState([]); 
   const [tagSearch, setTagSearch] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
-  const [filters, setFilters] = useState({ rooms: '', maxPrice: '' });
+  
+  // Новые фильтры
+  const [priceRange, setPriceRange] = useState(null); // {min, max}
+  const [propertyType, setPropertyType] = useState('all'); 
+  
   const [selectedApt, setSelectedApt] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -41,39 +32,43 @@ export default function App() {
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
-    
     async function fetchData() {
       const { data } = await supabase.from('apartments').select('*').order('created_at', { ascending: false });
-      if (data) {
-        setApartments(data);
-        const relevant = ['pool', 'gym', 'balcony', 'sea', 'beach', 'view', 'pet', 'kitchen', 'ac', 'wifi'];
-        const wordFreq = {};
-        data.forEach(apt => {
-          if (!apt.description) return;
-          apt.description.toLowerCase().split(/\s+/).forEach(word => {
-            if (relevant.some(r => word.includes(r))) wordFreq[word] = (wordFreq[word] || 0) + 1;
-          });
-        });
-        setDynamicKeywords(Object.entries(wordFreq).sort((a, b) => b[1] - a[1]).map(([w]) => w));
-      }
+      if (data) setApartments(data);
     }
     fetchData();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // ЛОГИКА ФИЛЬТРАЦИИ
   const filteredApts = useMemo(() => {
     return apartments.filter(a => {
-      const content = (a.description || "").toLowerCase();
-      const matchTags = selectedTags.every(t => content.includes(t));
-      const matchRooms = filters.rooms === '' || a.rooms === parseInt(filters.rooms);
-      const currentPrice = a.numeric_price < 1000 ? a.numeric_price * 1000000 : a.numeric_price;
-      const priceLimit = filters.maxPrice ? parseFloat(filters.maxPrice) * 1000000 : Infinity;
-      return matchTags && matchRooms && currentPrice <= priceLimit;
+      const desc = (a.description || "").toLowerCase();
+      
+      // 1. Поиск по строке
+      const matchesSearch = tagSearch === '' || desc.includes(tagSearch.toLowerCase());
+      
+      // 2. Поиск по типу жилья (Расширенный)
+      let matchesType = true;
+      if (propertyType === 'studio') matchesType = a.rooms === 0 || desc.includes('studio');
+      else if (propertyType === '1br') matchesType = a.rooms === 1;
+      else if (propertyType === '2br') matchesType = a.rooms === 2;
+      else if (propertyType === '3plus') {
+        matchesType = a.rooms >= 3 || desc.includes('3 bedroom') || desc.includes('house') || desc.includes('villa') || desc.includes('townhouse');
+      }
+
+      // 3. Поиск по диапазону цен
+      let matchesPrice = true;
+      if (priceRange) {
+        const val = a.numeric_price < 1000 ? a.numeric_price * 1000000 : a.numeric_price;
+        matchesPrice = val >= priceRange.min && val <= priceRange.max;
+      }
+
+      return matchesSearch && matchesType && matchesPrice;
     });
-  }, [apartments, selectedTags, filters]);
+  }, [apartments, tagSearch, propertyType, priceRange]);
 
   const sidebarWidth = isMobile ? window.innerWidth * 0.88 : 420;
-  const closedOffset = -sidebarWidth + 12;
 
   return (
     <div style={styles.container}>
@@ -86,30 +81,46 @@ export default function App() {
         </MapContainer>
       </div>
 
-      <div style={{ ...styles.sidebarWrapper, transform: `translateX(${isSidebarOpen ? 0 : closedOffset}px)` }}>
+      <div style={{ ...styles.sidebarWrapper, transform: `translateX(${isSidebarOpen ? 0 : -sidebarWidth + 12}px)` }}>
         <div style={{ ...styles.sidebar, width: sidebarWidth }}>
           <div style={styles.sidebarHeader}>
             <h2 style={styles.title}>Da Nang Finder 🌴</h2>
-            <div style={styles.filterBox}>
-              <input type="text" placeholder="Search features..." value={tagSearch} onChange={(e) => setTagSearch(e.target.value)} style={styles.tagInput} />
-              <div style={styles.tagWrapper}>
-                {dynamicKeywords.filter(t => t.includes(tagSearch.toLowerCase())).slice(0, 8).map(word => (
-                  <button key={word} onClick={() => setSelectedTags(prev => prev.includes(word) ? prev.filter(t => t !== word) : [...prev, word])}
-                    style={{ ...styles.tagButton, backgroundColor: selectedTags.includes(word) ? '#007AFF' : '#fff', color: selectedTags.includes(word) ? '#fff' : '#1d1d1f' }}>
-                    {word}
-                  </button>
-                ))}
-              </div>
+            
+            {/* ТИП ЖИЛЬЯ */}
+            <div style={styles.sectionLabel}>Property Type</div>
+            <div style={styles.chipScroll}>
+              {[
+                {id: 'all', label: 'All'},
+                {id: 'studio', label: 'Studio'},
+                {id: '1br', label: '1 BR'},
+                {id: '2br', label: '2 BR'},
+                {id: '3plus', label: '3BR+ / House'}
+              ].map(t => (
+                <button key={t.id} onClick={() => setPropertyType(t.id)} 
+                  style={{ ...styles.chip, backgroundColor: propertyType === t.id ? '#007AFF' : '#f5f5f7', color: propertyType === t.id ? '#fff' : '#1d1d1f' }}>
+                  {t.label}
+                </button>
+              ))}
             </div>
-            <div style={styles.filterRow}>
-              <select onChange={e => setFilters({...filters, rooms: e.target.value})} style={styles.inputShared}>
-                <option value="">Bedrooms</option>
-                <option value="0">Studio</option>
-                <option value="1">1 BR</option>
-                <option value="2">2+ BR</option>
-              </select>
-              <input type="number" placeholder="Max Price (M)" onChange={(e) => setFilters({...filters, maxPrice: e.target.value})} style={styles.inputShared} />
+
+            {/* ДИАПАЗОНЫ ЦЕН */}
+            <div style={styles.sectionLabel}>Price Range (VND)</div>
+            <div style={styles.chipScroll}>
+              {[
+                {label: 'Any', min: 0, max: Infinity},
+                {label: '8-12M', min: 8000000, max: 12000000},
+                {label: '13-17M', min: 13000000, max: 17000000},
+                {label: '18-22M', min: 18000000, max: 22000000},
+                {label: '25M+', min: 25000000, max: 999000000}
+              ].map(r => (
+                <button key={r.label} onClick={() => setPriceRange(r.max === Infinity ? null : r)} 
+                  style={{ ...styles.chip, backgroundColor: (priceRange?.label === r.label || (!priceRange && r.label === 'Any')) ? '#007AFF' : '#f5f5f7', color: (priceRange?.label === r.label || (!priceRange && r.label === 'Any')) ? '#fff' : '#1d1d1f' }}>
+                  {r.label}
+                </button>
+              ))}
             </div>
+
+            <input type="text" placeholder="Search keywords (pool, sea...)" value={tagSearch} onChange={(e) => setTagSearch(e.target.value)} style={styles.tagInput} />
           </div>
 
           <div style={styles.list}>
@@ -117,7 +128,7 @@ export default function App() {
               <div key={apt.id} onClick={() => setSelectedApt(apt)} style={styles.card}>
                 <img src={apt.image_urls?.[0]} style={styles.cardImg} alt="apt" />
                 <div style={{ padding: '18px' }}>
-                  <div style={styles.priceText}>{displayPrice(apt)}</div>
+                  <div style={styles.priceText}>{displayPrice(apt)} VND</div>
                   <div style={styles.descriptionText}>📍 {apt.description?.substring(0, 65)}...</div>
                 </div>
               </div>
@@ -139,9 +150,8 @@ export default function App() {
             <div style={styles.modalScrollContent}>
               <img src={selectedApt.image_urls?.[0]} style={styles.modalImg} />
               <div style={{ padding: '25px' }}>
-                <h2 style={styles.modalPrice}>{displayPrice(selectedApt)}</h2>
+                <h2 style={styles.modalPrice}>{displayPrice(selectedApt)} VND</h2>
                 <div style={styles.modalDesc}>{selectedApt.description}</div>
-                
                 <div style={styles.miniMapContainer}>
                   <div style={styles.sectionLabel}>Location</div>
                   <div style={styles.miniMapWrapper}>
@@ -169,32 +179,28 @@ const styles = {
   sidebarWrapper: { position: 'absolute', left: 0, top: 0, bottom: 0, zIndex: 1000, display: 'flex', alignItems: 'center', transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)' },
   sidebar: { height: '100vh', background: 'rgba(255, 255, 255, 0.98)', backdropFilter: 'blur(20px)', boxShadow: '0 0 40px rgba(0,0,0,0.1)', overflowY: 'auto' },
   pillContainer: { paddingLeft: '12px' },
-  macPill: { background: 'rgba(29, 29, 31, 0.9)', backdropFilter: 'blur(10px)', border: '0.5px solid rgba(255,255,255,0.2)', borderRadius: '20px', padding: '10px 18px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' },
+  macPill: { background: 'rgba(29, 29, 31, 0.9)', backdropFilter: 'blur(10px)', border: '0.5px solid rgba(255,255,255,0.2)', borderRadius: '20px', padding: '10px 18px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' },
   pillIcon: { fontSize: '14px', fontWeight: 'bold' },
   pillText: { fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px' },
   sidebarHeader: { padding: '40px 24px 15px' },
-  title: { margin: '0 0 20px 0', fontWeight: '700', fontSize: '26px', color: '#1d1d1f' },
-  filterBox: { background: '#f5f5f7', borderRadius: '18px', padding: '16px', marginBottom: '12px' },
-  tagInput: { width: '100%', padding: '12px', borderRadius: '10px', border: 'none', background: '#fff', marginBottom: '10px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' },
-  tagWrapper: { display: 'flex', flexWrap: 'wrap', gap: '6px' },
-  tagButton: { padding: '6px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '600', border: 'none' },
-  filterRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' },
-  inputShared: { height: '42px', padding: '0 10px', borderRadius: '10px', border: 'none', background: '#fff', fontSize: '14px', outline: 'none' },
+  title: { margin: '0 0 25px 0', fontWeight: '700', fontSize: '26px', color: '#1d1d1f' },
+  sectionLabel: { fontSize: '11px', fontWeight: '800', color: '#86868b', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '1px' },
+  chipScroll: { display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '20px', paddingBottom: '5px', scrollbarWidth: 'none' },
+  chip: { padding: '8px 16px', borderRadius: '12px', border: 'none', fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap', cursor: 'pointer', transition: '0.2s' },
+  tagInput: { width: '100%', padding: '14px', borderRadius: '14px', border: 'none', background: '#f5f5f7', fontSize: '14px', outline: 'none', boxSizing: 'border-box' },
   list: { padding: '0 24px 100px' },
   card: { background: '#fff', borderRadius: '20px', overflow: 'hidden', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', border: '1px solid #f5f5f7' },
   cardImg: { width: '100%', height: '200px', objectFit: 'cover' },
   priceText: { fontSize: '20px', fontWeight: '700', color: '#1d1d1f' },
   descriptionText: { fontSize: '13px', color: '#86868b', marginTop: '4px' },
-
   overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)', padding: '20px' },
-  modal: { background: '#fff', width: '100%', maxWidth: '480px', borderRadius: '30px', overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column', position: 'relative' },
+  modal: { background: '#fff', width: '100%', maxWidth: '480px', borderRadius: '30px', overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column' },
   modalScrollContent: { overflowY: 'auto', flex: 1 },
   modalImg: { width: '100%', height: '280px', objectFit: 'cover' },
   modalPrice: { fontSize: '26px', fontWeight: '700', marginBottom: '15px' },
-  modalDesc: { fontSize: '15px', color: '#1d1d1f', lineHeight: '1.6', whiteSpace: 'pre-wrap' },
-  sectionLabel: { fontSize: '12px', fontWeight: '800', color: '#86868b', textTransform: 'uppercase', marginBottom: '10px', letterSpacing: '1px' },
+  modalDesc: { fontSize: '15px', color: '#1d1d1f', lineHeight: '1.6', paddingRight: '10px' },
   miniMapContainer: { marginTop: '30px' },
   miniMapWrapper: { height: '200px', borderRadius: '20px', overflow: 'hidden', border: '1px solid #f5f5f7' },
-  modalFooter: { padding: '15px 25px 25px', background: 'linear-gradient(to top, white 80%, transparent)' },
-  appleCloseBtn: { width: '100%', padding: '16px', background: '#007AFF', color: '#fff', border: 'none', borderRadius: '16px', fontWeight: '600', fontSize: '16px', cursor: 'pointer' }
+  modalFooter: { padding: '15px 25px 25px' },
+  appleCloseBtn: { width: '100%', padding: '16px', background: '#007AFF', color: '#fff', border: 'none', borderRadius: '16px', fontWeight: '600', fontSize: '16px' }
 };
