@@ -45,7 +45,7 @@ export default function App() {
         <button className="btn-primary">Find Apartment</button>
       </nav>
 
-      {/* HERO */}
+      {/* HERO SECTION */}
       <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: '#A36D42', textTransform: 'uppercase' }}>
