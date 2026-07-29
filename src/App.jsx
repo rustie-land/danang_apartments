@@ -1,14 +1,38 @@
 import React, { useState } from 'react';
 
-export default function SearchPreferences({ onContinue }) {
-  // Локальные состояния для интерактивности
-  const [bedrooms, setBedrooms] = useState('Any');
-  const [minPrice, setMinPrice] = useState('155');
-  const [maxPrice, setMaxPrice] = useState('84949043');
-  const [selectedAmenities, setSelectedAmenities] = useState(['#sea']);
+export default function SearchPreferences({ onContinue, initialData }) {
+  // Спальни
+  const [bedrooms, setBedrooms] = useState(initialData?.bedrooms || 'Any');
+  
+  // Диапазон цен (в VND, шаг 100,000 VND)
+  const [minPrice, setMinPrice] = useState(initialData?.minPrice || 5000000);
+  const [maxPrice, setMaxPrice] = useState(initialData?.maxPrice || 50000000);
+  
+  // Удобства
+  const [selectedAmenities, setSelectedAmenities] = useState(initialData?.selectedAmenities || ['#sea']);
 
   const bedroomOptions = ['Any', 'Studio', '1 Bed', '2 Beds', '3+ Beds'];
   const amenityOptions = ['#pool', '#pet', '#balcony', '#beach', '#sea', '#gym', '#kitchen'];
+
+  // Округление до четных/целых сотен тысяч (00 на конце)
+  const formatVND = (val) => {
+    const num = Number(val) || 0;
+    // Округляем до ближайших 100,000
+    const rounded = Math.round(num / 100000) * 100000;
+    return new Intl.NumberFormat('vi-VN').format(rounded);
+  };
+
+  const handleMinPriceChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const val = Number(raw);
+    setMinPrice(val);
+  };
+
+  const handleMaxPriceChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    const val = Number(raw);
+    setMaxPrice(val);
+  };
 
   const toggleAmenity = (tag) => {
     setSelectedAmenities(prev => 
@@ -16,9 +40,18 @@ export default function SearchPreferences({ onContinue }) {
     );
   };
 
-  const handleContinue = () => {
-    if (onContinue) {
-      onContinue({ bedrooms, minPrice, maxPrice, selectedAmenities });
+  const handleContinue = (e) => {
+    e.preventDefault();
+    // Передаем данные на шаг 2 (на карту)
+    if (typeof onContinue === 'function') {
+      onContinue({
+        bedrooms,
+        minPrice,
+        maxPrice,
+        selectedAmenities
+      });
+    } else {
+      console.log('Кнопка нажата! Данные для карты:', { bedrooms, minPrice, maxPrice, selectedAmenities });
     }
   };
 
@@ -44,7 +77,7 @@ export default function SearchPreferences({ onContinue }) {
           </div>
           <span style={{ color: 'rgba(245, 242, 234, 0.4)' }}>➔</span>
           <div style={{ color: 'rgba(245, 242, 234, 0.7)' }}>
-            3. Properties (69)
+            3. Properties
           </div>
         </div>
       </header>
@@ -104,60 +137,76 @@ export default function SearchPreferences({ onContinue }) {
               </div>
             </div>
 
-            {/* PRICE RANGE (VND) */}
+            {/* PRICE RANGE (VND) WITH SLIDER */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A36D42', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  Price Range (VND)
+                  Max Price Range (VND)
                 </label>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D3C3E' }}>
-                  {minPrice || '0'} - {maxPrice || '0'} VND
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0D3C3E' }}>
+                  Up to {formatVND(maxPrice)} VND
                 </span>
               </div>
 
+              {/* Range Slider */}
+              <input 
+                type="range"
+                min="2000000"
+                max="100000000"
+                step="500000"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(Number(e.target.value))}
+                style={{ width: '100%', marginBottom: '1rem', accentColor: '#0D3C3E', cursor: 'pointer' }}
+              />
+
+              {/* Text Inputs */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <input 
-                  type="text" 
-                  value={minPrice} 
-                  onChange={(e) => setMinPrice(e.target.value)}
-                  placeholder="Min Price"
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem 1rem',
-                    borderRadius: '0.85rem',
-                    border: '1px solid #D5CEC0',
-                    backgroundColor: '#F5F2EA',
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    color: '#0D3C3E',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <input 
-                  type="text" 
-                  value={maxPrice} 
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  placeholder="Max Price"
-                  style={{
-                    width: '100%',
-                    padding: '0.85rem 1rem',
-                    borderRadius: '0.85rem',
-                    border: '1px solid #D5CEC0',
-                    backgroundColor: '#F5F2EA',
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    color: '#0D3C3E',
-                    outline: 'none',
-                    boxSizing: 'border-box'
-                  }}
-                />
+                <div>
+                  <span style={{ fontSize: '0.7rem', color: '#5A6663', display: 'block', marginBottom: '0.25rem' }}>MIN (VND)</span>
+                  <input 
+                    type="text" 
+                    value={formatVND(minPrice)} 
+                    onChange={handleMinPriceChange}
+                    style={{
+                      width: '100%',
+                      padding: '0.85rem 1rem',
+                      borderRadius: '0.85rem',
+                      border: '1px solid #D5CEC0',
+                      backgroundColor: '#F5F2EA',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      color: '#0D3C3E',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div>
+                  <span style={{ fontSize: '0.7rem', color: '#5A6663', display: 'block', marginBottom: '0.25rem' }}>MAX (VND)</span>
+                  <input 
+                    type="text" 
+                    value={formatVND(maxPrice)} 
+                    onChange={handleMaxPriceChange}
+                    style={{
+                      width: '100%',
+                      padding: '0.85rem 1rem',
+                      borderRadius: '0.85rem',
+                      border: '1px solid #D5CEC0',
+                      backgroundColor: '#F5F2EA',
+                      fontSize: '0.9rem',
+                      fontWeight: 600,
+                      color: '#0D3C3E',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
             {/* AMENITIES */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#A36D42', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight 700, color: '#A36D42', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
                 Amenities
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
