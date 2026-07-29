@@ -1,38 +1,87 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-@layer base {
-  body {
-    background-color: #F5F2EA;
-    color: #1C2826;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-  }
+:root {
+  --bg-cream: #F5F2EA;
+  --card-cream: #ECE6D9;
+  --card-hover: #E2DAD0;
+  --forest-dark: #0D3C3E;
+  --forest-light: #1B5255;
+  --accent-terracotta: #A36D42;
+  --text-main: #1C2826;
+  --text-muted: #5A6663;
 }
 
-.font-serif {
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-cream) !important;
+  color: var(--text-main);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Шрифты */
+.font-serif, h1, h2, h3, .serif-text {
   font-family: 'Cormorant Garamond', serif !important;
 }
 
-.font-sans {
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+/* Кастомные классы под макет */
+.bg-cream-main { background-color: var(--bg-cream); }
+.bg-cream-card { background-color: var(--card-cream); }
+.bg-forest { background-color: var(--forest-dark); }
+.text-forest { color: var(--forest-dark); }
+.text-terracotta { color: var(--accent-terracotta); }
+.text-muted-custom { color: var(--text-muted); }
+
+.btn-primary {
+  background-color: var(--forest-dark);
+  color: #F5F2EA;
+  border-radius: 9999px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* Custom Range Input */
+.btn-primary:hover {
+  background-color: var(--forest-light);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--text-main);
+  border-radius: 9999px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  border: 1px solid #D5CEC0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background-color: var(--card-cream);
+}
+
+/* Range input */
 input[type=range] {
   -webkit-appearance: none;
+  width: 100%;
   background: transparent;
 }
 
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 20px;
-  width: 20px;
+  height: 22px;
+  width: 22px;
   border-radius: 50%;
-  background: #0D3C3E;
+  background: var(--forest-dark);
   cursor: pointer;
-  margin-top: -8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  margin-top: -9px;
 }
 
 input[type=range]::-webkit-slider-runnable-track {
