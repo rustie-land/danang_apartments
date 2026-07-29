@@ -1,18 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-export default function SearchPreferences({ 
-  bedrooms, 
-  setBedrooms, 
-  minPrice, 
-  setMinPrice, 
-  maxPrice, 
-  setMaxPrice, 
-  selectedAmenities, 
-  toggleAmenity, 
-  onContinue 
-}) {
+export default function SearchPreferences({ onContinue }) {
+  // Локальные состояния для интерактивности
+  const [bedrooms, setBedrooms] = useState('Any');
+  const [minPrice, setMinPrice] = useState('155');
+  const [maxPrice, setMaxPrice] = useState('84949043');
+  const [selectedAmenities, setSelectedAmenities] = useState(['#sea']);
+
   const bedroomOptions = ['Any', 'Studio', '1 Bed', '2 Beds', '3+ Beds'];
   const amenityOptions = ['#pool', '#pet', '#balcony', '#beach', '#sea', '#gym', '#kitchen'];
+
+  const toggleAmenity = (tag) => {
+    setSelectedAmenities(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleContinue = () => {
+    if (onContinue) {
+      onContinue({ bedrooms, minPrice, maxPrice, selectedAmenities });
+    }
+  };
 
   return (
     <div style={{ backgroundColor: '#F5F2EA', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#1C2826' }}>
@@ -75,7 +83,7 @@ export default function SearchPreferences({
                     <button
                       key={opt}
                       type="button"
-                      onClick={() => setBedrooms && setBedrooms(opt)}
+                      onClick={() => setBedrooms(opt)}
                       style={{
                         padding: '0.75rem 0.5rem',
                         borderRadius: '0.85rem',
@@ -103,7 +111,7 @@ export default function SearchPreferences({
                   Price Range (VND)
                 </label>
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0D3C3E' }}>
-                  {minPrice || '155'} - {maxPrice || '84.949.043'} VND
+                  {minPrice || '0'} - {maxPrice || '0'} VND
                 </span>
               </div>
 
@@ -111,8 +119,8 @@ export default function SearchPreferences({
                 <input 
                   type="text" 
                   value={minPrice} 
-                  onChange={(e) => setMinPrice && setMinPrice(e.target.value)}
-                  placeholder="155"
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  placeholder="Min Price"
                   style={{
                     width: '100%',
                     padding: '0.85rem 1rem',
@@ -129,8 +137,8 @@ export default function SearchPreferences({
                 <input 
                   type="text" 
                   value={maxPrice} 
-                  onChange={(e) => setMaxPrice && setMaxPrice(e.target.value)}
-                  placeholder="84949043"
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  placeholder="Max Price"
                   style={{
                     width: '100%',
                     padding: '0.85rem 1rem',
@@ -154,12 +162,12 @@ export default function SearchPreferences({
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                 {amenityOptions.map((tag) => {
-                  const isSelected = selectedAmenities?.includes(tag);
+                  const isSelected = selectedAmenities.includes(tag);
                   return (
                     <button
                       key={tag}
                       type="button"
-                      onClick={() => toggleAmenity && toggleAmenity(tag)}
+                      onClick={() => toggleAmenity(tag)}
                       style={{
                         padding: '0.5rem 0.9rem',
                         borderRadius: '0.75rem',
@@ -184,7 +192,7 @@ export default function SearchPreferences({
             <div style={{ paddingTop: '1rem' }}>
               <button
                 type="button"
-                onClick={onContinue}
+                onClick={handleContinue}
                 style={{
                   width: '100%',
                   padding: '1.1rem',
@@ -200,7 +208,7 @@ export default function SearchPreferences({
                   justifyContent: 'center',
                   gap: '0.5rem',
                   boxShadow: '0 4px 14px rgba(13, 60, 62, 0.2)',
-                  transition: 'transform 0.15s ease, background-color 0.15s ease'
+                  transition: 'transform 0.15s ease'
                 }}
               >
                 <span>✏️ Continue to Map & Draw Area</span>
