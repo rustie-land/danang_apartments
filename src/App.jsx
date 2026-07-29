@@ -1,271 +1,211 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-export default function SearchPreferences({ onContinue, initialData }) {
-  // Спальни
-  const [bedrooms, setBedrooms] = useState(initialData?.bedrooms || 'Any');
-  
-  // Диапазон цен (в VND, шаг 100,000 VND)
-  const [minPrice, setMinPrice] = useState(initialData?.minPrice || 5000000);
-  const [maxPrice, setMaxPrice] = useState(initialData?.maxPrice || 50000000);
-  
-  // Удобства
-  const [selectedAmenities, setSelectedAmenities] = useState(initialData?.selectedAmenities || ['#sea']);
-
+export default function SearchPreferences({
+  bedrooms,
+  setBedrooms,
+  minPrice,
+  setMinPrice,
+  maxPrice,
+  setMaxPrice,
+  amenities,
+  toggleAmenity,
+  onContinue
+}) {
   const bedroomOptions = ['Any', 'Studio', '1 Bed', '2 Beds', '3+ Beds'];
   const amenityOptions = ['#pool', '#pet', '#balcony', '#beach', '#sea', '#gym', '#kitchen'];
 
-  // Округление до четных/целых сотен тысяч (00 на конце)
-  const formatVND = (val) => {
-    const num = Number(val) || 0;
-    // Округляем до ближайших 100,000
-    const rounded = Math.round(num / 100000) * 100000;
-    return new Intl.NumberFormat('vi-VN').format(rounded);
-  };
-
-  const handleMinPriceChange = (e) => {
-    const raw = e.target.value.replace(/\D/g, '');
-    const val = Number(raw);
-    setMinPrice(val);
-  };
-
-  const handleMaxPriceChange = (e) => {
-    const raw = e.target.value.replace(/\D/g, '');
-    const val = Number(raw);
-    setMaxPrice(val);
-  };
-
-  const toggleAmenity = (tag) => {
-    setSelectedAmenities(prev => 
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-    );
-  };
-
-  const handleContinue = (e) => {
-    e.preventDefault();
-    // Передаем данные на шаг 2 (на карту)
-    if (typeof onContinue === 'function') {
-      onContinue({
-        bedrooms,
-        minPrice,
-        maxPrice,
-        selectedAmenities
-      });
-    } else {
-      console.log('Кнопка нажата! Данные для карты:', { bedrooms, minPrice, maxPrice, selectedAmenities });
-    }
-  };
-
   return (
-    <div style={{ backgroundColor: '#F5F2EA', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", color: '#1C2826' }}>
+    <div style={{ backgroundColor: '#F5F2EA', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* ---------------- NAVBAR ---------------- */}
-      <header style={{ backgroundColor: '#0D3C3E', padding: '1rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.75rem', fontWeight: 600, color: '#F5F2EA' }}>
-            rightmove <span style={{ fontStyle: 'italic', fontWeight: 400 }}>Da Nang</span>
+      {/* --- TOP NAVBAR (Точная копия со скриншота) --- */}
+      <header style={{ 
+        backgroundColor: '#0D3C3E', 
+        padding: '0.875rem 2rem', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        color: '#ffffff'
+      }}>
+        {/* Logo */}
+        <div style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.5rem', fontWeight: 600, color: '#F5F2EA' }}>
+            rightmove <span style={{ fontWeight: 400, fontStyle: 'italic' }}>Da Nang</span>
           </span>
         </div>
 
-        {/* Wizard Steps */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', fontWeight: 500 }}>
-          <div style={{ backgroundColor: '#F5F2EA', color: '#0D3C3E', padding: '0.4rem 1rem', borderRadius: '9999px', fontWeight: 600 }}>
+        {/* Steps */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', fontWeight: 600 }}>
+          <div style={{ backgroundColor: '#13B1A6', color: '#ffffff', padding: '0.4rem 1rem', borderRadius: '9999px' }}>
             1. Search Preferences
           </div>
-          <span style={{ color: 'rgba(245, 242, 234, 0.4)' }}>➔</span>
-          <div style={{ color: 'rgba(245, 242, 234, 0.7)' }}>
+          <span style={{ color: 'rgba(255,255,255,0.4)' }}>➔</span>
+          <div style={{ color: 'rgba(255,255,255,0.8)' }}>
             2. Draw Area
           </div>
-          <span style={{ color: 'rgba(245, 242, 234, 0.4)' }}>➔</span>
-          <div style={{ color: 'rgba(245, 242, 234, 0.7)' }}>
-            3. Properties
+          <span style={{ color: 'rgba(255,255,255,0.4)' }}>➔</span>
+          <div style={{ color: 'rgba(255,255,255,0.8)' }}>
+            3. Properties (69)
           </div>
         </div>
       </header>
 
-      {/* ---------------- MAIN CONTAINER ---------------- */}
-      <main style={{ maxWidth: '680px', margin: '3rem auto', padding: '0 1.5rem' }}>
+      {/* --- MAIN CARD (1 в 1 как на скриншоте) --- */}
+      <main style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '3rem 1rem' }}>
         <div style={{ 
           backgroundColor: '#ECE6D9', 
-          borderRadius: '2rem', 
+          borderRadius: '1.5rem', 
           padding: '2.5rem', 
-          border: '1px solid #E2DAD0',
-          boxShadow: '0 10px 30px -10px rgba(13, 60, 62, 0.08)' 
+          width: '100%', 
+          maxWidth: '620px',
+          boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)',
+          border: '1px solid #E2DAD0'
         }}>
           
           {/* Header */}
-          <div style={{ marginBottom: '2rem' }}>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '2.75rem', color: '#0D3C3E', fontWeight: 600, margin: 0, lineHeight: 1.1 }}>
-              Search Options
-            </h1>
-            <p style={{ color: '#5A6663', fontSize: '0.95rem', marginTop: '0.5rem' }}>
-              Set your target price and bedroom preferences
-            </p>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '2.25rem', fontWeight: 700, color: '#0D3C3E', margin: '0 0 0.25rem 0' }}>
+            Search Options
+          </h1>
+          <p style={{ color: '#5A6663', fontSize: '0.9rem', margin: '0 0 1.75rem 0' }}>
+            Set your target price and bedroom preferences
+          </p>
+
+          {/* BEDROOMS */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#5A6663', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+              BEDROOMS
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+              {bedroomOptions.map((opt) => {
+                const isActive = bedrooms === opt;
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setBedrooms && setBedrooms(opt)}
+                    style={{
+                      padding: '0.65rem 0',
+                      borderRadius: '0.5rem',
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      border: 'none',
+                      cursor: 'pointer',
+                      backgroundColor: isActive ? '#0D3C3E' : '#F5F2EA',
+                      color: isActive ? '#ffffff' : '#4A5553',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-            
-            {/* BEDROOMS */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#A36D42', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                Bedrooms
+          {/* PRICE RANGE (VND) */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#5A6663', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                PRICE RANGE (VND)
               </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
-                {bedroomOptions.map((opt) => {
-                  const isActive = bedrooms === opt;
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => setBedrooms(opt)}
-                      style={{
-                        padding: '0.75rem 0.5rem',
-                        borderRadius: '0.85rem',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        border: 'none',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        backgroundColor: isActive ? '#0D3C3E' : '#F5F2EA',
-                        color: isActive ? '#F5F2EA' : '#4A5553',
-                        boxShadow: isActive ? '0 4px 12px rgba(13, 60, 62, 0.15)' : 'none'
-                      }}
-                    >
-                      {opt}
-                    </button>
-                  );
-                })}
-              </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#00A896' }}>
+                {minPrice || '155'} - {maxPrice || '84.949.043'} VND
+              </span>
             </div>
 
-            {/* PRICE RANGE (VND) WITH SLIDER */}
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A36D42', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  Max Price Range (VND)
-                </label>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0D3C3E' }}>
-                  Up to {formatVND(maxPrice)} VND
-                </span>
-              </div>
-
-              {/* Range Slider */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <input 
-                type="range"
-                min="2000000"
-                max="100000000"
-                step="500000"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(Number(e.target.value))}
-                style={{ width: '100%', marginBottom: '1rem', accentColor: '#0D3C3E', cursor: 'pointer' }}
-              />
-
-              {/* Text Inputs */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <span style={{ fontSize: '0.7rem', color: '#5A6663', display: 'block', marginBottom: '0.25rem' }}>MIN (VND)</span>
-                  <input 
-                    type="text" 
-                    value={formatVND(minPrice)} 
-                    onChange={handleMinPriceChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.85rem 1rem',
-                      borderRadius: '0.85rem',
-                      border: '1px solid #D5CEC0',
-                      backgroundColor: '#F5F2EA',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#0D3C3E',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-                <div>
-                  <span style={{ fontSize: '0.7rem', color: '#5A6663', display: 'block', marginBottom: '0.25rem' }}>MAX (VND)</span>
-                  <input 
-                    type="text" 
-                    value={formatVND(maxPrice)} 
-                    onChange={handleMaxPriceChange}
-                    style={{
-                      width: '100%',
-                      padding: '0.85rem 1rem',
-                      borderRadius: '0.85rem',
-                      border: '1px solid #D5CEC0',
-                      backgroundColor: '#F5F2EA',
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      color: '#0D3C3E',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* AMENITIES */}
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight 700, color: '#A36D42', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                Amenities
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                {amenityOptions.map((tag) => {
-                  const isSelected = selectedAmenities.includes(tag);
-                  return (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleAmenity(tag)}
-                      style={{
-                        padding: '0.5rem 0.9rem',
-                        borderRadius: '0.75rem',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        border: '1px solid',
-                        borderColor: isSelected ? '#0D3C3E' : '#D5CEC0',
-                        backgroundColor: isSelected ? '#0D3C3E' : '#F5F2EA',
-                        color: isSelected ? '#F5F2EA' : '#4A5553',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* CONTINUE BUTTON */}
-            <div style={{ paddingTop: '1rem' }}>
-              <button
-                type="button"
-                onClick={handleContinue}
+                type="text" 
+                value={minPrice} 
+                onChange={(e) => setMinPrice && setMinPrice(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '1.1rem',
-                  borderRadius: '1rem',
-                  backgroundColor: '#0D3C3E',
-                  color: '#F5F2EA',
-                  border: 'none',
-                  fontSize: '1rem',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #D5CEC0',
+                  backgroundColor: '#F5F2EA',
+                  fontSize: '0.9rem',
                   fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  boxShadow: '0 4px 14px rgba(13, 60, 62, 0.2)',
-                  transition: 'transform 0.15s ease'
+                  color: '#0D3C3E',
+                  outline: 'none',
+                  boxSizing: 'border-box'
                 }}
-              >
-                <span>✏️ Continue to Map & Draw Area</span>
-                <span>➔</span>
-              </button>
+              />
+              <input 
+                type="text" 
+                value={maxPrice} 
+                onChange={(e) => setMaxPrice && setMaxPrice(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '0.5rem',
+                  border: '1px solid #D5CEC0',
+                  backgroundColor: '#F5F2EA',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: '#0D3C3E',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
             </div>
-
           </div>
+
+          {/* AMENITIES */}
+          <div style={{ marginBottom: '2rem' }}>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight 700, color: '#5A6663', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+              AMENITIES
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+              {amenityOptions.map((tag) => {
+                const isSelected = amenities?.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleAmenity && toggleAmenity(tag)}
+                    style={{
+                      padding: '0.45rem 0.85rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      border: 'none',
+                      backgroundColor: isSelected ? '#0D3C3E' : '#F5F2EA',
+                      color: isSelected ? '#ffffff' : '#4A5553',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* BUTTON: CONTINUE TO MAP */}
+          <button
+            type="button"
+            onClick={onContinue}
+            style={{
+              width: '100%',
+              padding: '0.9rem',
+              borderRadius: '0.75rem',
+              backgroundColor: '#00A896', // Бирюзово-зеленая кнопка как на скриншоте
+              color: '#ffffff',
+              border: 'none',
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(0, 168, 150, 0.2)'
+            }}
+          >
+            ✏️ Continue to Map & Draw Area ➔
+          </button>
+
         </div>
       </main>
     </div>
