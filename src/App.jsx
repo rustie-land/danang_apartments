@@ -1,8 +1,10 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
-import { MOCK_PROPERTIES } from './data/mockProperties.js';
 import LandingPage from './components/LandingPage.jsx';
 import AreaSelectionPage from './components/AreaSelectionPage.jsx';
 import ResultsPage from './components/ResultsPage.jsx';
+
+// Подключаем Supabase из файла src/supabaseClient.js
+import { supabase } from './supabaseClient.js';
 
 const DEFAULT_CENTER = [16.06, 108.23];
 const DEFAULT_ZOOM = 13;
@@ -10,10 +12,14 @@ const DEFAULT_ZOOM = 13;
 export default function App() {
   const [step, setStep] = useState(1);
 
+  // Хранилище объявлений, полученных из Supabase
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [bedrooms, setBedrooms] = useState('Any');
   const [minPrice, setMinPrice] = useState('5000000');
   const [maxPrice, setMaxPrice] = useState('25000000');
-  const [amenities, setAmenities] = useState(['#sea']);
+  const [amenities, setAmenities] = useState([]); // Очистили значение по умолчанию, чтобы на старте показывались все объявления
 
   const [mapBounds, setMapBounds] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
@@ -21,6 +27,47 @@ export default function App() {
   const [activeModalProperty, setActiveModalProperty] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [sortBy, setSortBy] = useState('default');
+
+  // Загружаем данные из Supabase при монтировании компонента
+  useEffect(() => {
+    async function fetchProperties() {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('apartments')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('❌ Ошибка загрузки из Supabase:', error);
+        } else if (data) {
+          // Приводим поля таблицы Supabase к структуре вашего приложения
+          const formattedData = data.map((item) => ({
+            id: item.id || item.original_url,
+            beds: item.rooms === 0 ? 'Studio' : String(item.rooms),
+            price: item.numeric_price, // Числовая цена в донгах
+            priceRaw: item.price_raw,
+            amenities: item.features || [], // Массив тегов (#pool, #sea и т.д.)
+            lat: item.lat,
+            lng: item.lng,
+            imageUrls: item.image_urls || [],
+            description: item.description,
+            contact: item.contact,
+            originalUrl: item.original_url
+          }));
+
+          console.log(`✅ Загружено объявлений из Supabase: ${formattedData.length}`, formattedData);
+          setProperties(formattedData);
+        }
+      } catch (err) {
+        console.error('⚠️ Исключение при вызове запроса:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProperties();
+  }, []);
 
   const toggleAmenity = useCallback((tag) => {
     setAmenities((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -43,12 +90,12 @@ export default function App() {
   );
 
   const totalFilteredCount = useMemo(
-    () => MOCK_PROPERTIES.filter(filterByPreferences).length,
-    [filterByPreferences]
+    () => properties.filter(filterByPreferences).length,
+    [properties, filterByPreferences]
   );
 
   const propertiesInBounds = useMemo(() => {
-    const filtered = MOCK_PROPERTIES.filter(filterByPreferences).filter((item) => {
+    const filtered = properties.filter(filterByPreferences).filter((item) => {
       if (!mapBounds) return true;
       return mapBounds.contains([item.lat, item.lng]);
     });
@@ -56,7 +103,7 @@ export default function App() {
     if (sortBy === 'price-asc') return [...filtered].sort((a, b) => a.price - b.price);
     if (sortBy === 'price-desc') return [...filtered].sort((a, b) => b.price - a.price);
     return filtered;
-  }, [filterByPreferences, mapBounds, sortBy]);
+  }, [properties, filterByPreferences, mapBounds, sortBy]);
 
   useEffect(() => {
     if (selectedPropertyId && !propertiesInBounds.some((p) => p.id === selectedPropertyId)) {
@@ -72,6 +119,14 @@ export default function App() {
     setSelectedPropertyId(prop.id);
     setMapCenterCoords([prop.lat, prop.lng]);
   };
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
+        <h2>⏳ Загрузка объявлений...</h2>
+      </div>
+    );
+  }
 
   if (step === 2) {
     return (
