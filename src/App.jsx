@@ -3,7 +3,7 @@ import LandingPage from './components/LandingPage.jsx';
 import AreaSelectionPage from './components/AreaSelectionPage.jsx';
 import ResultsPage from './components/ResultsPage.jsx';
 
-// Подключаем Supabase из файла src/supabaseClient.js
+// Подключаем Supabase клиент из папки src/
 import { supabase } from './supabaseClient.js';
 
 const DEFAULT_CENTER = [16.06, 108.23];
@@ -16,10 +16,11 @@ export default function App() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Состояния фильтров
   const [bedrooms, setBedrooms] = useState('Any');
   const [minPrice, setMinPrice] = useState('5000000');
   const [maxPrice, setMaxPrice] = useState('25000000');
-  const [amenities, setAmenities] = useState([]); // Очистили значение по умолчанию, чтобы на старте показывались все объявления
+  const [amenities, setAmenities] = useState([]); // Очищено по умолчанию, чтобы видеть все объекты
 
   const [mapBounds, setMapBounds] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
@@ -33,6 +34,8 @@ export default function App() {
     async function fetchProperties() {
       try {
         setLoading(true);
+        console.log('🔄 Отправка запроса в Supabase к таблице apartments...');
+
         const { data, error } = await supabase
           .from('apartments')
           .select('*')
@@ -41,7 +44,7 @@ export default function App() {
         if (error) {
           console.error('❌ Ошибка загрузки из Supabase:', error);
         } else if (data) {
-          // Приводим поля таблицы Supabase к структуре вашего приложения
+          // Маппим полученные из парсера поля к структуре UI-компонентов
           const formattedData = data.map((item) => ({
             id: item.id || item.original_url,
             beds: item.rooms === 0 ? 'Studio' : String(item.rooms),
@@ -56,11 +59,11 @@ export default function App() {
             originalUrl: item.original_url
           }));
 
-          console.log(`✅ Загружено объявлений из Supabase: ${formattedData.length}`, formattedData);
+          console.log(`✅ Успешно загружено объявлений из Supabase: ${formattedData.length}`, formattedData);
           setProperties(formattedData);
         }
       } catch (err) {
-        console.error('⚠️ Исключение при вызове запроса:', err);
+        console.error('⚠️ Исключение при выполнении запроса:', err);
       } finally {
         setLoading(false);
       }
@@ -120,10 +123,11 @@ export default function App() {
     setMapCenterCoords([prop.lat, prop.lng]);
   };
 
+  // Экраны приложения
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
-        <h2>⏳ Загрузка объявлений...</h2>
+        <h2>⏳ Загрузка объявлений из базы...</h2>
       </div>
     );
   }
