@@ -1,7 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
-import './index.css' // <-- ОБЯЗАТЕЛЬНО ДОЛЖЕН БЫТЬ ЭТОТ ИМПОРТ!
+import './index.css'
+import 'leaflet/dist/leaflet.css' // Важно для корректного отображения карты Leaflet!
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
