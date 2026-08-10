@@ -3,7 +3,7 @@ import LandingPage from './components/LandingPage.jsx';
 import AreaSelectionPage from './components/AreaSelectionPage.jsx';
 import ResultsPage from './components/ResultsPage.jsx';
 
-// Подключаем Supabase клиент из папки src/
+// Подключаем клиент Supabase с безопасным фоллбэком
 import { supabase } from './supabaseClient.js';
 
 const DEFAULT_CENTER = [16.06, 108.23];
@@ -20,7 +20,7 @@ export default function App() {
   const [bedrooms, setBedrooms] = useState('Any');
   const [minPrice, setMinPrice] = useState('5000000');
   const [maxPrice, setMaxPrice] = useState('25000000');
-  const [amenities, setAmenities] = useState([]); // Очищено по умолчанию, чтобы видеть все объекты
+  const [amenities, setAmenities] = useState([]);
 
   const [mapBounds, setMapBounds] = useState(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState(null);
@@ -29,12 +29,15 @@ export default function App() {
   const [favorites, setFavorites] = useState([]);
   const [sortBy, setSortBy] = useState('default');
 
-  // Загружаем данные из Supabase при монтировании компонента
+  // Мобильный режим для ResultsPage: 'list' (список) или 'map' (карта)
+  const [mobileView, setMobileView] = useState('list');
+
+  // Загружаем данные из Supabase при монтировании
   useEffect(() => {
     async function fetchProperties() {
       try {
         setLoading(true);
-        console.log('🔄 Отправка запроса в Supabase к таблице apartments...');
+        console.log('🔄 Загрузка данных из Supabase...');
 
         const { data, error } = await supabase
           .from('apartments')
@@ -42,24 +45,40 @@ export default function App() {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('❌ Ошибка загрузки из Supabase:', error);
+          console.error('❌ Ошибка Supabase:', error);
         } else if (data) {
-          // Маппим полученные из парсера поля к структуре UI-компонентов
-          const formattedData = data.map((item) => ({
-            id: item.id || item.original_url,
-            beds: item.rooms === 0 ? 'Studio' : String(item.rooms),
-            price: item.numeric_price, // Числовая цена в донгах
-            priceRaw: item.price_raw,
-            amenities: item.features || [], // Массив тегов (#pool, #sea и т.д.)
-            lat: item.lat,
-            lng: item.lng,
-            imageUrls: item.image_urls || [],
-            description: item.description,
-            contact: item.contact,
-            originalUrl: item.original_url
-          }));
+          const formattedData = data.map((item, index) => {
+            const numPrice = item.numeric_price || 0;
+            const formattedPrice =
+              item.price_raw ||
+              (numPrice > 0 ? `${numPrice.toLocaleString('vi-VN')} VND` : 'Price on request');
 
-          console.log(`✅ Успешно загружено объявлений из Supabase: ${formattedData.length}`, formattedData);
+            const bedsCount = item.rooms === 0 || !item.rooms ? 'Studio' : String(item.rooms);
+            const computedTitle = item.title || `${bedsCount} Apartment in Da Nang`;
+
+            return {
+              id: item.id || item.original_url || `apt-${index}`,
+              title: computedTitle,
+              beds: bedsCount,
+              price: numPrice,
+              priceFormatted: formattedPrice,
+              priceRaw: formattedPrice,
+              amenities: Array.isArray(item.features) ? item.features : [],
+              lat: Number(item.lat) || 16.06,
+              lng: Number(item.lng) || 108.23,
+              imageUrls:
+                Array.isArray(item.image_urls) && item.image_urls.length > 0
+                  ? item.image_urls
+                  : ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80'],
+              description: item.description || 'No description provided.',
+              contact: item.contact || 'N/A',
+              originalUrl: item.original_url || '',
+              location: item.address || item.district || 'Da Nang',
+              address: item.address || 'Da Nang'
+            };
+          });
+
+          console.log(`✅ Загружено объявлений из Supabase: ${formattedData.length}`, formattedData);
           setProperties(formattedData);
         }
       } catch (err) {
@@ -77,7 +96,7 @@ export default function App() {
   }, []);
 
   const toggleFavorite = useCallback((id) => {
-    setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));
+    setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, f]));
   }, []);
 
   const filterByPreferences = useCallback(
@@ -163,6 +182,8 @@ export default function App() {
         onBackToMap={goToStep2}
         activeModalProperty={activeModalProperty}
         onCloseModal={() => setActiveModalProperty(null)}
+        mobileView={mobileView}
+        setMobileView={setMobileView}
       />
     );
   }
