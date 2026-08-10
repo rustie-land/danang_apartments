@@ -3,7 +3,7 @@ import LandingPage from './components/LandingPage.jsx';
 import AreaSelectionPage from './components/AreaSelectionPage.jsx';
 import ResultsPage from './components/ResultsPage.jsx';
 
-// Подключаем клиент Supabase с безопасным фоллбэком
+// Подключаем клиент Supabase с фоллбэком для безопасной инициализации
 import { supabase } from './supabaseClient.js';
 
 const DEFAULT_CENTER = [16.06, 108.23];
@@ -18,7 +18,7 @@ export default function App() {
 
   // Состояния фильтров
   const [bedrooms, setBedrooms] = useState('Any');
-  const [minPrice, setMinPrice] = useState('5000000');
+  const [minPrice, setMinPrice] = useState('0');
   const [maxPrice, setMaxPrice] = useState('25000000');
   const [amenities, setAmenities] = useState([]);
 
@@ -29,7 +29,7 @@ export default function App() {
   const [favorites, setFavorites] = useState([]);
   const [sortBy, setSortBy] = useState('default');
 
-  // Мобильный режим для ResultsPage: 'list' (список) или 'map' (карта)
+  // Переключатель вида для мобильных устройств ('list' | 'map')
   const [mobileView, setMobileView] = useState('list');
 
   // Загружаем данные из Supabase при монтировании
@@ -51,15 +51,21 @@ export default function App() {
             const numPrice = item.numeric_price || 0;
             const formattedPrice =
               item.price_raw ||
-              (numPrice > 0 ? `${numPrice.toLocaleString('vi-VN')} VND` : 'Price on request');
+              (numPrice > 0 ? `${numPrice.toLocaleString('vi-VN')} VND` : 'Contact for price');
 
-            const bedsCount = item.rooms === 0 || !item.rooms ? 'Studio' : String(item.rooms);
-            const computedTitle = item.title || `${bedsCount} Apartment in Da Nang`;
+            // Нормализация формата спален под кнопки интерфейса (Studio, 1 Bed, 2 Beds, 3+ Beds)
+            let bedsLabel = 'Studio';
+            const roomsVal = Number(item.rooms);
+            if (roomsVal === 1) bedsLabel = '1 Bed';
+            else if (roomsVal === 2) bedsLabel = '2 Beds';
+            else if (roomsVal >= 3) bedsLabel = '3+ Beds';
+
+            const computedTitle = item.title || `${bedsLabel} Apartment in Da Nang`;
 
             return {
               id: item.id || item.original_url || `apt-${index}`,
               title: computedTitle,
-              beds: bedsCount,
+              beds: bedsLabel,
               price: numPrice,
               priceFormatted: formattedPrice,
               priceRaw: formattedPrice,
@@ -78,7 +84,7 @@ export default function App() {
             };
           });
 
-          console.log(`✅ Загружено объявлений из Supabase: ${formattedData.length}`, formattedData);
+          console.log(`✅ Успешно загружено объявлений: ${formattedData.length}`, formattedData);
           setProperties(formattedData);
         }
       } catch (err) {
@@ -96,16 +102,24 @@ export default function App() {
   }, []);
 
   const toggleFavorite = useCallback((id) => {
-    setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, f]));
+    setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));
   }, []);
 
+  // Корректная функция фильтрации
   const filterByPreferences = useCallback(
     (item) => {
+      // Сопоставление спален
       const matchBeds = bedrooms === 'Any' || item.beds === bedrooms;
+
+      // Сопоставление цен
       const min = minPrice === '' ? -Infinity : Number(minPrice);
       const max = maxPrice === '' ? Infinity : Number(maxPrice);
-      const matchPrice = item.price >= min && item.price <= max;
-      const matchAmenities = amenities.length === 0 || amenities.every((a) => item.amenities.includes(a));
+      const matchPrice = item.price === 0 || (item.price >= min && item.price <= max);
+
+      // Сопоставление тегов удобств
+      const matchAmenities =
+        amenities.length === 0 || amenities.every((a) => item.amenities.includes(a));
+
       return matchBeds && matchPrice && matchAmenities;
     },
     [bedrooms, minPrice, maxPrice, amenities]
