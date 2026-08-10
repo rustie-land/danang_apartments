@@ -53,7 +53,7 @@ export default function App() {
               item.price_raw ||
               (numPrice > 0 ? `${numPrice.toLocaleString('vi-VN')} VND` : 'Contact for price');
 
-            // Нормализация формата спален под кнопки интерфейса (Studio, 1 Bed, 2 Beds, 3+ Beds)
+            // Нормализация формата спален под кнопки UI (Studio, 1 Bed, 2 Beds, 3+ Beds)
             let bedsLabel = 'Studio';
             const roomsVal = Number(item.rooms);
             if (roomsVal === 1) bedsLabel = '1 Bed';
@@ -105,20 +105,26 @@ export default function App() {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));
   }, []);
 
-  // Корректная функция фильтрации
+  // Гибкая функция фильтрации
   const filterByPreferences = useCallback(
     (item) => {
-      // Сопоставление спален
+      // 1. Проверка спален
       const matchBeds = bedrooms === 'Any' || item.beds === bedrooms;
 
-      // Сопоставление цен
+      // 2. Проверка цены
       const min = minPrice === '' ? -Infinity : Number(minPrice);
       const max = maxPrice === '' ? Infinity : Number(maxPrice);
       const matchPrice = item.price === 0 || (item.price >= min && item.price <= max);
 
-      // Сопоставление тегов удобств
+      // 3. Мягкая проверка удобств (сравнение тегов без учёта регистра и символа '#')
       const matchAmenities =
-        amenities.length === 0 || amenities.every((a) => item.amenities.includes(a));
+        amenities.length === 0 ||
+        amenities.some((tag) => {
+          const cleanSelectedTag = tag.replace('#', '').toLowerCase();
+          return item.amenities.some((itemTag) =>
+            String(itemTag).replace('#', '').toLowerCase() === cleanSelectedTag
+          );
+        });
 
       return matchBeds && matchPrice && matchAmenities;
     },
