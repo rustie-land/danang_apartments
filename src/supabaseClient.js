@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Используем значения из env или фоллбэк на пустую строку
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 
-// 🔍 Проверка ключей в консоли браузера
-console.log('Supabase URL Loaded:', !!supabaseUrl);
-console.log('Supabase Key Loaded:', !!supabaseAnonKey);
+if (!import.meta.env.VITE_SUPABASE_URL) {
+  console.warn('⚠️ VITE_SUPABASE_URL не найдена в variables Vercel!');
+}
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
