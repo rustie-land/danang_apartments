@@ -265,6 +265,35 @@ async def upload_image(message, channel_id: int) -> str | None:
         print(f"    ⚠️ Ошибка обработки медиа {message.id}: {e}")
         return None
 
+def is_rental_listing(text: str) -> bool:
+    """Пропускаем только объявления о ДЛИТЕЛЬНОЙ АРЕНДЕ апартаментов.
+    Отбрасываем: продажу, инвестиции, авто/мото, заголовки-списки районов, ботов."""
+    t = text.lower()
+
+    # Явные исключения (НЕ аренда)
+    reject = [
+        'покупк', 'купить', 'buy', 'sale', 'for sale', 'продаж', 'invest',
+        'инвест', 'авто', 'auto', 'мото', 'motorcycle', 'cars', '😎',  # часто в заголовках каналов
+    ]
+    if any(k in t for k in reject):
+        return False
+
+    # Признаки аренды (должен быть хотя бы один)
+    rent_signals = [
+        'аренд', 'сдаётся', 'сдается', 'сниму', 'rent', 'for rent', 'rental',
+        'длительн', 'помесяч', 'long stay', 'monthly', 'lease', 'жильё', 'жилье',
+        'apartment', 'condo', 'квартир', 'studio', 'bedroom', 'спальн',
+    ]
+    if not any(k in t for k in rent_signals):
+        return False
+
+    # Отбрасываем "списки районов" (много ссылок t.me + слово район/список)
+    tme_links = t.count('t.me/') + t.count('@')
+    if tme_links >= 3 and any(k in t for k in ['район', 'список', 'district', 'list']):
+        return False
+
+    return True
+
 # --- ОСНОВНОЙ ПАЙПЛАЙН ---
 
 async def main():
@@ -293,8 +322,8 @@ async def main():
             
             media_groups = {}
             
-            # Собираем сообщения за последние MAX_AGE_DAYS
-            async for message in client.iter_messages(channel, limit=50):
+            # Собираем сообщения за последние MAX_AGE_DAYS (берём больше, т.к. много мусора отсеется)
+            async for message in client.iter_messages(channel, limit=80):
                 if message.date and (now - message.date > timedelta(days=MAX_AGE_DAYS)):
                     continue
                 if not message.text and not message.photo:
@@ -318,8 +347,10 @@ async def main():
             # Обрабатываем сгруппированные данные
             for gid, data in media_groups.items():
                 text = data["text"]
-                # Валидация: нужен минимальный текст и хотя бы одно фото
-                if not data["photo_messages"] or len(text) < 30:
+                # Валидация: нужно фото + это реально объявление об аренде
+                if not data["photo_messages"]:
+                    continue
+                if not is_rental_listing(text):
                     continue
                 
                 price_val, currency = clean_price(text)
