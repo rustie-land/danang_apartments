@@ -55,7 +55,7 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
       <div style={{ padding: '0.85rem 0.85rem 0.85rem 0', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
         <div>
           <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '0.05em' }}>
-            {property.area.toUpperCase()}
+            {property.area ? property.area.toUpperCase() : 'ASIA'}
           </div>
           <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.15rem', color: 'var(--color-deep)', margin: '0.2rem 0' }}>
             {property.title}

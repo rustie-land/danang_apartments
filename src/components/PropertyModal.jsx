@@ -40,7 +40,7 @@ export default function PropertyModal({ property, onClose }) {
 
         <div style={{ padding: '1.75rem' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '0.05em' }}>
-            {property.area.toUpperCase()}
+            {property.area ? property.area.toUpperCase() : 'ASIA'}
           </div>
           <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--color-deep)', margin: '0.25rem 0 0.5rem 0' }}>
             {property.title}
