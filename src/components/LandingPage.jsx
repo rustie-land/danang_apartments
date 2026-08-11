@@ -6,7 +6,7 @@ export default function LandingPage({ filterProps, totalFilteredCount, onGoToMap
     <div style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh' }}>
       <nav className="navbar" style={{ borderBottom: '1px solid var(--color-border)' }}>
         <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-deep)' }}>
-          Da Nang <span style={{ fontWeight: 400, fontStyle: 'italic' }}>Apartments</span>
+          Asia Stays
         </div>
         <button
           onClick={onGoToMap}
@@ -34,7 +34,7 @@ export default function LandingPage({ filterProps, totalFilteredCount, onGoToMap
           <div style={{ width: '100%', height: '420px', borderRadius: 'var(--radius-lg)', overflow: 'hidden', position: 'relative' }}>
             <SafeImage
               src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1000&q=80"
-              alt="Панорама пляжа Дананга"
+              alt="Asia Stays hero"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
             <div style={{ position: 'absolute', bottom: '1.5rem', left: '1.5rem', right: '1.5rem', backgroundColor: 'var(--color-deep)', padding: '1.25rem', borderRadius: '1rem', color: 'var(--color-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>

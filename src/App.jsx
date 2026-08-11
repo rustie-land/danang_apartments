@@ -60,7 +60,7 @@ export default function App() {
             else if (roomsVal === 2) bedsLabel = '2 Beds';
             else if (roomsVal >= 3) bedsLabel = '3+ Beds';
 
-            const computedTitle = item.title || `${bedsLabel} Apartment in Da Nang`;
+            const computedTitle = item.title || `${bedsLabel} Apartment in Asia`;
 
             return {
               id: item.id || item.original_url || `apt-${index}`,
@@ -84,8 +84,8 @@ export default function App() {
               description: item.description || 'No description provided.',
               contact: item.contact || 'N/A',
               originalUrl: item.original_url || '',
-              location: item.address || item.district || 'Da Nang',
-              address: item.address || 'Da Nang'
+              location: item.address || item.district || 'Asia',
+              address: item.address || 'Asia'
             };
           });
 

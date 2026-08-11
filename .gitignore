@@ -44,3 +44,8 @@ venv/
 *.swp
 *.swo
 .DS_Store
+
+# Local dev/backup helpers (not committed)
+_backup_table.py
+_diag_env.py
+apartments_backup.json

@@ -146,6 +146,18 @@ img {
   .navbar {
     padding: 1rem 1.5rem;
   }
+  /* Mobile list/map toggle */
+  .mobile-toggle {
+    display: flex !important;
+  }
+  /* Hide the inactive pane on mobile (keep both on desktop) */
+  .mobile-only-hidden {
+    display: none;
+  }
+  /* When map is the active mobile view, let it fill the screen */
+  .results-split:has(.results-map-pane:not(.mobile-only-hidden)) .results-map-pane {
+    height: calc(100vh - 60px);
+  }
 }
 
 @media (max-width: 480px) {

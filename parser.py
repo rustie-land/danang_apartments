@@ -33,7 +33,7 @@ client = TelegramClient('danang_session', int(TG_API_ID), TG_API_HASH)
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 FOLDER_NAME = "parsing aprt"
-MAX_AGE_DAYS = 7
+MAX_AGE_DAYS = 10
 USD_TO_VND_M = 0.025  # Курс для конвертации $ в миллионы донгов ($1000 = 25M VND)
 
 # --- УМНЫЕ ЭКСТРАКТОРЫ ---
