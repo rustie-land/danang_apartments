@@ -1,7 +1,56 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import SafeImage from './SafeImage.jsx';
 
-export default function PropertyModal({ property, onClose }) {
+function ImageCarousel({ images }) {
+  const [index, setIndex] = useState(0);
+  const safeIndex = Math.min(index, images.length - 1);
+
+  const go = (dir) => {
+    setIndex((i) => (i + dir + images.length) % images.length);
+  };
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '260px', backgroundColor: '#000' }}>
+      <SafeImage
+        src={images[safeIndex]}
+        alt={`Фото ${safeIndex + 1}`}
+        style={{ width: '100%', height: '260px', objectFit: 'cover' }}
+      />
+
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); go(-1); }}
+            aria-label="Предыдущее фото"
+            style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', backgroundColor: 'rgba(0,0,0,0.45)', color: '#fff', border: 'none', width: '34px', height: '34px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.1rem', zIndex: 5 }}
+          >
+            ‹
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); go(1); }}
+            aria-label="Следующее фото"
+            style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', backgroundColor: 'rgba(0,0,0,0.45)', color: '#fff', border: 'none', width: '34px', height: '34px', borderRadius: '50%', cursor: 'pointer', fontSize: '1.1rem', zIndex: 5 }}
+          >
+            ›
+          </button>
+          <div style={{ position: 'absolute', bottom: '0.75rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.35rem', zIndex: 5 }}>
+            {images.map((_, i) => (
+              <span
+                key={i}
+                style={{ width: i === safeIndex ? '18px' : '7px', height: '7px', borderRadius: '9999px', backgroundColor: i === safeIndex ? '#fff' : 'rgba(255,255,255,0.5)', transition: 'width 0.2s' }}
+              />
+            ))}
+          </div>
+          <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '9999px', zIndex: 5 }}>
+            {safeIndex + 1} / {images.length}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function PropertyModal({ property, onClose, convertPrice }) {
   const closeButtonRef = useRef(null);
 
   useEffect(() => {
@@ -36,7 +85,7 @@ export default function PropertyModal({ property, onClose }) {
           ✕
         </button>
 
-        <SafeImage src={property.img} alt={property.title} style={{ width: '100%', height: '260px', objectFit: 'cover' }} />
+        <ImageCarousel images={property.imageUrls && property.imageUrls.length > 0 ? property.imageUrls : [property.img]} />
 
         <div style={{ padding: '1.75rem' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '0.05em' }}>
@@ -60,7 +109,7 @@ export default function PropertyModal({ property, onClose }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <div style={{ fontSize: '0.7rem', color: 'var(--color-muted)', textTransform: 'uppercase' }}>Аренда в месяц</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-deep)' }}>{property.price.toLocaleString('ru-RU')} VND</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-deep)' }}>{convertPrice(property.price)} <span style={{ fontSize: '0.8rem', fontWeight: 400 }}>/ мес</span></div>
             </div>
 
             <button

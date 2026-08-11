@@ -1,19 +1,47 @@
 import SafeImage from './SafeImage.jsx';
 import FilterForm from './FilterForm.jsx';
 
-export default function LandingPage({ filterProps, totalFilteredCount, onGoToMap }) {
+export default function LandingPage({ filterProps, totalFilteredCount, onGoToMap, cities, selectedCity, setSelectedCity, currency, setCurrency }) {
+  const currencyOptions = ['VND', 'USD', 'THB'];
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh' }}>
-      <nav className="navbar" style={{ borderBottom: '1px solid var(--color-border)' }}>
+      <nav className="navbar" style={{ borderBottom: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-deep)' }}>
           Asia Stays
         </div>
-        <button
-          onClick={onGoToMap}
-          style={{ backgroundColor: 'var(--color-deep)', color: 'var(--color-bg)', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer' }}
-        >
-          Выбрать зону поиска ➔
-        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <label style={{ fontSize: '0.75rem', color: 'var(--color-muted)' }} htmlFor="city-select">Город:</label>
+          <select
+            id="city-select"
+            value={selectedCity}
+            onChange={(e) => setSelectedCity(e.target.value)}
+            style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-alt)', color: 'var(--color-deep)', fontWeight: 600 }}
+          >
+            {cities.map((c) => (
+              <option key={c} value={c}>{c === 'All' ? 'Все города' : c}</option>
+            ))}
+          </select>
+
+          <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'var(--color-bg-alt)', borderRadius: '0.5rem', padding: '0.2rem' }}>
+            {currencyOptions.map((cur) => (
+              <button
+                key={cur}
+                onClick={() => setCurrency(cur)}
+                style={{ border: 'none', borderRadius: '0.35rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: currency === cur ? 'var(--color-deep)' : 'transparent', color: currency === cur ? '#fff' : 'var(--color-deep)' }}
+              >
+                {cur}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={onGoToMap}
+            style={{ backgroundColor: 'var(--color-deep)', color: 'var(--color-bg)', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer' }}
+          >
+            Выбрать зону поиска ➔
+          </button>
+        </div>
       </nav>
 
       <section className="hero-grid">

@@ -23,7 +23,10 @@ export default function ResultsPage({
   activeModalProperty,
   onCloseModal,
   mobileView,
-  setMobileView
+  setMobileView,
+  currency,
+  setCurrency,
+  convertPrice
 }) {
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -73,6 +76,17 @@ export default function ResultsPage({
           <button onClick={onBackToLanding} style={{ backgroundColor: '#ece6d9', color: 'var(--color-deep)', border: 'none', padding: '0.45rem 0.9rem', borderRadius: '0.4rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
             ⚙️ Фильтры
           </button>
+          <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: '0.5rem', padding: '0.2rem' }}>
+            {['VND', 'USD', 'THB'].map((cur) => (
+              <button
+                key={cur}
+                onClick={() => setCurrency(cur)}
+                style={{ border: 'none', borderRadius: '0.35rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: currency === cur ? 'var(--color-bg)' : 'transparent', color: currency === cur ? 'var(--color-deep)' : 'var(--color-bg)' }}
+              >
+                {cur}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -100,6 +114,7 @@ export default function ResultsPage({
                   onSelect={onSelectProperty}
                   onToggleFavorite={onToggleFavorite}
                   onOpenDetails={onOpenDetails}
+                  convertPrice={convertPrice}
                 />
               ))}
             </div>
@@ -108,7 +123,7 @@ export default function ResultsPage({
 
         <div className={`results-map-pane${mobileView === 'list' ? ' mobile-only-hidden' : ''}`}>
           <MapContainer center={initialCenter} zoom={initialZoom} style={{ height: '100%', width: '100%' }}>
-            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
             <MapController coords={mapCenterCoords} />
 
             {properties.map((prop) => (
@@ -123,7 +138,7 @@ export default function ResultsPage({
                     <SafeImage src={prop.img} alt={prop.title} style={{ width: '100%', height: '95px', objectFit: 'cover', borderRadius: '0.4rem' }} />
                     <h4 style={{ margin: '0.4rem 0 0.1rem 0', fontSize: '0.85rem', color: 'var(--color-deep)' }}>{prop.title}</h4>
                     <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-accent)' }}>
-                      {prop.price.toLocaleString('ru-RU')} VND / мес
+                      {convertPrice(prop.price)}
                     </p>
                     <button
                       onClick={() => onOpenDetails(prop)}
@@ -139,7 +154,7 @@ export default function ResultsPage({
         </div>
       </div>
 
-      {activeModalProperty && <PropertyModal property={activeModalProperty} onClose={onCloseModal} />}
+      {activeModalProperty && <PropertyModal property={activeModalProperty} onClose={onCloseModal} convertPrice={convertPrice} />}
     </div>
   );
 }

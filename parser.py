@@ -35,8 +35,45 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 FOLDER_NAME = "parsing aprt"
 MAX_AGE_DAYS = 10
 USD_TO_VND_M = 0.025  # Курс для конвертации $ в миллионы донгов ($1000 = 25M VND)
+# Примерные курсы (можно вынести в .env позже). 1 USD / 1 THB -> VND
+USD_TO_VND = 25000.0
+THB_TO_VND = 700.0
 
 # --- УМНЫЕ ЭКСТРАКТОРЫ ---
+
+def detect_currency(text: str) -> str:
+    """Определяет валюту объявления по ключевым словам. По умолчанию VND."""
+    t = text.lower()
+    # THB (бат) — проверяем до $, т.к. в Таиланде часто пишут "฿" или "baht"
+    if any(k in t for k in ['฿', 'baht', 'бат', 'thb', 'thai bath', 'thailand']):
+        return 'THB'
+    # USD / $
+    if any(k in t for k in ['$', 'usd', 'долл', 'dollar']):
+        return 'USD'
+    # Явный донг
+    if any(k in t for k in ['vnd', 'đồng', 'донг', 'triệu', 'trieu', 'tr ', ' m ']):
+        return 'VND'
+    return 'VND'
+
+def extract_city(text: str, channel_title: str = '') -> str:
+    """Определяет город/район из текста объявления ИЛИ названия канала."""
+    t = (text + ' ' + channel_title).lower()
+    city_map = {
+        'da nang': 'Da Nang',
+        'дананг': 'Da Nang',
+        'pattaya': 'Pattaya',
+        'паттайя': 'Pattaya',
+        'bangkok': 'Bangkok',
+        'бангкок': 'Bangkok',
+        'phuket': 'Phuket',
+        'пхукет': 'Phuket',
+        'hua hin': 'Hua Hin',
+        'хуа хин': 'Hua Hin',
+    }
+    for key, city in city_map.items():
+        if key in t:
+            return city
+    return 'Other'
 
 def extract_rooms(text: str) -> int:
     text = text.lower()
@@ -71,34 +108,84 @@ def extract_features(text: str) -> list:
     }
     return [tag for tag, keywords in tags_map.items() if any(k in text_lower for k in keywords)]
 
-def clean_price(text: str) -> float:
-    if not text: 
-        return 0.0
-    
+def clean_price(text: str) -> tuple[float, str]:
+    """Возвращает (цена_в_VND_миллионах, валюта_источника).
+    Корректно различает VND / USD / THB и конвертирует в VND."""
+    if not text:
+        return 0.0, 'VND'
+
     text_clean = text.lower().replace(',', '').replace(' ', '')
-    
-    # 1. Поиск USD (например $500 или 500$)
-    usd_match = re.search(r'(\$|\busd\b)?\s*(\d{3,4})\s*(\$|\busd\b)?', text_clean)
-    if usd_match:
+    currency = detect_currency(text)
+
+    amount = 0.0  # в исходной валюте
+
+    # 1. Поиск USD (например $500, 500$, 500 usd)
+    usd_match = re.search(r'(\$|usd)?(\d{3,5})(\$|usd)?', text_clean)
+    if currency == 'USD' and usd_match:
         val = float(usd_match.group(2))
-        if 200 <= val <= 5000: # Разумный диапазон аренды в USD
-            return round(val * USD_TO_VND_M, 2)
+        if 100 <= val <= 20000:
+            amount = val
+    # 2. Поиск THB (например 15000฿, 15,000 baht)
+    elif currency == 'THB':
+        thb_match = re.search(r'(\d{4,7})(฿|baht|thb)?', text_clean)
+        if thb_match:
+            val = float(thb_match.group(1))
+            if 3000 <= val <= 500000:
+                amount = val
+    # 3. Поиск в миллионах донгов (12m, 12.5 triệu, 12tr, 12 million)
+    elif currency == 'VND':
+        m_match = re.search(r'(\d+\.?\d*)\s*(million|mln|m|tr|triệu|trieu)', text_clean)
+        if m_match:
+            val = float(m_match.group(1))
+            amount = val if val < 100 else round(val / 1000, 2)
+        else:
+            # 4. Полная запись донгов (12000000)
+            full_match = re.search(r'(\d{7,8})', text_clean)
+            if full_match:
+                amount = round(float(full_match.group(1)) / 1_000_000, 2)
 
-    # 2. Поиск в миллионах (12m, 12.5 triệu, 12tr, 12 million)
-    m_match = re.search(r'(\d+\.?\d*)\s*(million|mln|m|tr|triệu|trieu)', text_clean)
-    if m_match:
-        val = float(m_match.group(1))
-        return val if val < 100 else round(val / 1000, 2)
+    # Конвертация в VND (миллионы)
+    if currency == 'USD':
+        vnd_m = round(amount * USD_TO_VND / 1_000_000, 2)
+    elif currency == 'THB':
+        vnd_m = round(amount * THB_TO_VND / 1_000_000, 2)
+    else:
+        vnd_m = amount
 
-    # 3. Полная запись (12000000)
-    full_match = re.search(r'(\d{7,8})', text_clean)
-    if full_match:
-        return round(float(full_match.group(1)) / 1_000_000, 2)
+    return vnd_m, currency
 
-    return 0.0
+def translate_text(text: str) -> str:
+    """Переводит описание на английский. Возвращает оригинал при ошибке."""
+    if not text or len(text) < 5:
+        return text
+    try:
+        from deep_translator import GoogleTranslator
+        return GoogleTranslator(source='auto', target='en').translate(text)
+    except Exception as e:
+        print(f"    ⚠️ Ошибка перевода: {e}")
+        return text
 
 def get_coords(text: str) -> tuple[float, float]:
     text_lower = text.lower()
+    # Города (приоритет выше районов — проверяем первыми)
+    cities = {
+        'pattaya': (12.9236, 100.8823),
+        'паттайя': (12.9236, 100.8823),
+        'bangkok': (13.7563, 100.5018),
+        'бангкок': (13.7563, 100.5018),
+        'phuket': (7.8804, 98.3923),
+        'пхукет': (7.8804, 98.3923),
+        'hua hin': (12.5684, 99.9591),
+        'хуа хин': (12.5684, 99.9591),
+    }
+    for city, coords in cities.items():
+        if city in text_lower:
+            base_lat, base_lng = coords
+            return (
+                round(base_lat + random.uniform(-0.02, 0.02), 6),
+                round(base_lng + random.uniform(-0.02, 0.02), 6)
+            )
+
     areas = {
         'my an': (16.0520, 108.2410),
         'my khe': (16.0600, 108.2430),
@@ -235,13 +322,15 @@ async def main():
                 if not data["photo_messages"] or len(text) < 30:
                     continue
                 
-                price_val = clean_price(text)
+                price_val, currency = clean_price(text)
                 # Пропускаем объявления с нулевой или аномально высокой ценой (>80M VND)
                 if price_val <= 0 or price_val > 80:
                     continue
 
                 lat, lng = get_coords(text)
-                
+                city = extract_city(text, getattr(channel, 'title', ''))
+                desc_en = translate_text(text)
+
                 # Загружаем максимум 5 фото на объявление
                 uploaded_images = []
                 for photo_msg in data["photo_messages"][:5]:
@@ -255,11 +344,14 @@ async def main():
                 # Формируем payload в соответствии со структурой Supabase
                 payload = {
                     "description": text,
+                    "description_en": desc_en,
                     "price_raw": f"{price_val:g}M VND",
+                    "currency": currency,
                     "numeric_price": int(price_val * 1_000_000), # В донгах (например 12000000)
                     "original_url": f"tg_{channel.id}_{data['id']}",
                     "lat": lat,
                     "lng": lng,
+                    "city": city,
                     "image_urls": uploaded_images,
                     "rooms": extract_rooms(text),
                     "contact": extract_contacts(text),
@@ -269,7 +361,7 @@ async def main():
 
                 # Upsert в таблицу
                 supabase.table("apartments").upsert(payload, on_conflict='original_url').execute()
-                print(f"  ✅ [Added] Price: {price_val}M VND | Rooms: {payload['rooms']} | Photos: {len(uploaded_images)}")
+                print(f"  ✅ [Added] City: {city} | Price: {price_val}M VND ({currency}) | Rooms: {payload['rooms']} | Photos: {len(uploaded_images)}")
 
         except Exception as e:
             print(f"  ⚠️ Ошибка при обработке канала: {e}")

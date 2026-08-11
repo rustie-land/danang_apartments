@@ -29,6 +29,22 @@ export default function App() {
   const [favorites, setFavorites] = useState([]);
   const [sortBy, setSortBy] = useState('default');
 
+  // Валюта отображения и выбранный город (мультигородская поддержка)
+  const [currency, setCurrency] = useState('VND'); // VND | USD | THB
+  const [selectedCity, setSelectedCity] = useState('All');
+
+  // Курсы: сколько единиц исходной валюты за 1 VND (для конвертации из VND)
+  const VND_RATES = { VND: 1, USD: 1 / 25000, THB: 1 / 700 };
+  const CURRENCY_SYMBOL = { VND: 'VND', USD: '$', THB: '฿' };
+
+  // Конвертация цены (хранится в VND) в выбранную валюту
+  const convertPrice = (priceVnd) => {
+    const rate = VND_RATES[currency] ?? 1;
+    const val = (priceVnd || 0) * rate;
+    if (currency === 'VND') return Math.round(val).toLocaleString('ru-RU') + ' VND';
+    return CURRENCY_SYMBOL[currency] + val.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  };
+
   // Переключатель вида для мобильных устройств ('list' | 'map')
   const [mobileView, setMobileView] = useState('list');
 
@@ -82,8 +98,11 @@ export default function App() {
                   ? item.image_urls[0]
                   : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',
               description: item.description || 'No description provided.',
+              desc: item.description_en || item.description || 'No description provided.',
               contact: item.contact || 'N/A',
               area: item.area || item.district || item.address || 'Asia',
+              city: item.city || 'Other',
+              currency: item.currency || 'VND',
               originalUrl: item.original_url || '',
               location: item.address || item.district || 'Asia',
               address: item.address || 'Asia'
@@ -111,13 +130,22 @@ export default function App() {
     setFavorites((prev) => (prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]));
   }, []);
 
+  // Список уникальных городов из загруженных данных (для переключателя)
+  const cities = useMemo(() => {
+    const set = new Set(properties.map((p) => p.city).filter(Boolean));
+    return ['All', ...Array.from(set).sort()];
+  }, [properties]);
+
   // Гибкая функция фильтрации
   const filterByPreferences = useCallback(
     (item) => {
+      // 0. Фильтр по городу
+      if (selectedCity !== 'All' && item.city !== selectedCity) return false;
+
       // 1. Проверка спален
       const matchBeds = bedrooms === 'Any' || item.beds === bedrooms;
 
-      // 2. Проверка цены
+      // 2. Проверка цены (в VND, независимо от валюты отображения)
       const min = minPrice === '' ? -Infinity : Number(minPrice);
       const max = maxPrice === '' ? Infinity : Number(maxPrice);
       const matchPrice = item.price === 0 || (item.price >= min && item.price <= max);
@@ -134,7 +162,7 @@ export default function App() {
 
       return matchBeds && matchPrice && matchAmenities;
     },
-    [bedrooms, minPrice, maxPrice, amenities]
+    [selectedCity, bedrooms, minPrice, maxPrice, amenities]
   );
 
   const totalFilteredCount = useMemo(
@@ -210,6 +238,9 @@ export default function App() {
         onCloseModal={() => setActiveModalProperty(null)}
         mobileView={mobileView}
         setMobileView={setMobileView}
+        currency={currency}
+        setCurrency={setCurrency}
+        convertPrice={convertPrice}
       />
     );
   }
@@ -217,6 +248,11 @@ export default function App() {
   return (
     <LandingPage
       totalFilteredCount={totalFilteredCount}
+      cities={cities}
+      selectedCity={selectedCity}
+      setSelectedCity={setSelectedCity}
+      currency={currency}
+      setCurrency={setCurrency}
       onGoToMap={goToStep2}
       filterProps={{
         bedrooms,

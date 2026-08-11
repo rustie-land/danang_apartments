@@ -1,6 +1,6 @@
 import SafeImage from './SafeImage.jsx';
 
-export default function PropertyCard({ property, isSelected, isFavorite, onSelect, onToggleFavorite, onOpenDetails }) {
+export default function PropertyCard({ property, isSelected, isFavorite, onSelect, onToggleFavorite, onOpenDetails, convertPrice }) {
   return (
     <div
       onClick={() => onSelect(property)}
@@ -65,7 +65,8 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
           <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-deep)' }}>
-            {property.price.toLocaleString('ru-RU')} <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'var(--color-muted)' }}>VND</span>
+            {convertPrice(property.price)}
+            <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'var(--color-muted)' }}> / мес</span>
           </div>
           <button
             onClick={(e) => {
