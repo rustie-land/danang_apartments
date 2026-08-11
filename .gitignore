@@ -21,4 +21,26 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+*.swh?
+
+# Secrets and sensitive data — NEVER commit
+.env
+.env.*
+!.env.example
+*.session
+*.session-journal
+
+# Local data exports
+*.csv
+temp_*.jpg
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor swap files
+*.swp
+*.swo
+.DS_Store

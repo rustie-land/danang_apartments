@@ -1,16 +1,73 @@
-# React + Vite
+# Da Nang Apartments
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Веб-приложение для поиска квартир в долгосрочную аренду в Да Нанге (Вьетнам).
+Пользователь задаёт бюджет и предпочтения, выбирает зону на карте, и видит
+доступные объявления со списком и на интерактивной карте.
 
-Currently, two official plugins are available:
+## Стек
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Frontend:** React 18 + Vite 5, Leaflet / react-leaflet (карта), Supabase JS.
+- **Backend данных:** Supabase (PostgreSQL + Storage).
+- **Парсинг:** Python-скрипты, собирающие объявления из Telegram-каналов в Supabase.
+- **Деплой:** Vercel (`vercel.json` присутствует).
 
-## React Compiler
+## Структура
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```
+src/                      React-приложение (App.jsx + компоненты)
+parser.py                 Пайплайн: Telegram → Supabase
+converter.py              Пайплайн: data.csv (Facebook-выгрузка) → JSON
+requirements.txt          Python-зависимости
+```
 
-## Expanding the ESLint configuration
+## Локальный запуск фронтенда
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # продакшен-сборка в dist/
+```
+
+Переменные окружения (Vite, префикс `VITE_`) задаются в настройках проекта Vercel
+или локально в `.env` (файл в `.gitignore` — **не коммитьте его**):
+
+```
+VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## Парсинг данных (Python)
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env      # затем заполните значения
+python parser.py          # Telegram → Supabase
+python converter.py       # data.csv → src/...json (вспомогательный пайплайн)
+```
+
+Переменные окружения для парсеров (`.env`, **не коммиттится**):
+
+```
+SUPABASE_URL=...
+SUPABASE_KEY=...          # service key (только для серверных скриптов, не для фронта!)
+TG_API_ID=...
+TG_API_HASH=...
+```
+
+> ⚠️ `SUPABASE_KEY` здесь — это серверный ключ. Никогда не используйте его во
+> фронтенде и не публикуйте в репозитории.
+
+## Безопасность
+
+- `.env`, `*.session`, `*.csv`, `*.swp` находятся в `.gitignore` и **не должны
+  попадать в git**. История репозитория очищена от ранее закоммиченных секретов.
+- На таблице `apartments` в Supabase должен быть включён Row Level Security (RLS).
+  Фронтенд работает только с anon-key, поэтому RLS обязателен.
+- После любой утечки ключей (Telegram API hash, Supabase anon/service key)
+  обязательно перегенерируйте их и обновите в Vercel / `.env`.
+
+## TODO
+
+- [ ] Добавить тесты на парсеры цен/комнат.
+- [ ] Пагинация Supabase-запроса (сейчас `select('*')` без лимита).
+- [ ] Вынести инлайн-стили в CSS-классы.

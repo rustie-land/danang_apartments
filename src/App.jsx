@@ -76,6 +76,11 @@ export default function App() {
                 Array.isArray(item.image_urls) && item.image_urls.length > 0
                   ? item.image_urls
                   : ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80'],
+              // UI components read `img` (single cover image); map from the array.
+              img:
+                Array.isArray(item.image_urls) && item.image_urls.length > 0
+                  ? item.image_urls[0]
+                  : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',
               description: item.description || 'No description provided.',
               contact: item.contact || 'N/A',
               originalUrl: item.original_url || '',
