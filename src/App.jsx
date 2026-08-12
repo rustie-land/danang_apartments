@@ -238,6 +238,9 @@ export default function App() {
         onCloseModal={() => setActiveModalProperty(null)}
         mobileView={mobileView}
         setMobileView={setMobileView}
+        cities={cities}
+        selectedCity={selectedCity}
+        setSelectedCity={setSelectedCity}
         currency={currency}
         setCurrency={setCurrency}
         convertPrice={convertPrice}

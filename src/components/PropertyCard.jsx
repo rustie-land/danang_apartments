@@ -3,11 +3,11 @@ import SafeImage from './SafeImage.jsx';
 export default function PropertyCard({ property, isSelected, isFavorite, onSelect, onToggleFavorite, onOpenDetails, convertPrice }) {
   return (
     <div
-      onClick={() => onSelect(property)}
+      onClick={() => onOpenDetails(property)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onSelect(property);
+        if (e.key === 'Enter' || e.key === ' ') onOpenDetails(property);
       }}
       style={{
         display: 'flex',
@@ -71,7 +71,7 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onOpenDetails(property);
+              onSelect(property);
             }}
             style={{
               backgroundColor: 'var(--color-deep)',
@@ -84,7 +84,7 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
               cursor: 'pointer'
             }}
           >
-            Подробнее
+            На карте
           </button>
         </div>
       </div>

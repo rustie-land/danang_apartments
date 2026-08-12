@@ -2,22 +2,49 @@ import { useEffect, useRef, useState } from 'react';
 import SafeImage from './SafeImage.jsx';
 
 function ImageCarousel({ images }) {
+  const imgs = images && images.length > 0 ? images : [];
   const [index, setIndex] = useState(0);
-  const safeIndex = Math.min(index, images.length - 1);
+  const safeIndex = Math.min(index, Math.max(imgs.length - 1, 0));
+  const touchX = useRef(null);
+
+  // Автопрокрутка (только если больше 1 фото)
+  useEffect(() => {
+    if (imgs.length <= 1) return;
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % imgs.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [imgs.length]);
 
   const go = (dir) => {
-    setIndex((i) => (i + dir + images.length) % images.length);
+    setIndex((i) => (i + dir + imgs.length) % imgs.length);
   };
 
+  const onTouchStart = (e) => {
+    touchX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e) => {
+    if (touchX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+    touchX.current = null;
+  };
+
+  if (imgs.length === 0) return null;
+
   return (
-    <div style={{ position: 'relative', width: '100%', height: '260px', backgroundColor: '#000' }}>
+    <div
+      style={{ position: 'relative', width: '100%', height: '260px', backgroundColor: '#000', touchAction: 'pan-y' }}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
       <SafeImage
-        src={images[safeIndex]}
+        src={imgs[safeIndex]}
         alt={`Фото ${safeIndex + 1}`}
         style={{ width: '100%', height: '260px', objectFit: 'cover' }}
       />
 
-      {images.length > 1 && (
+      {imgs.length > 1 && (
         <>
           <button
             onClick={(e) => { e.stopPropagation(); go(-1); }}
@@ -34,7 +61,7 @@ function ImageCarousel({ images }) {
             ›
           </button>
           <div style={{ position: 'absolute', bottom: '0.75rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '0.35rem', zIndex: 5 }}>
-            {images.map((_, i) => (
+            {imgs.map((_, i) => (
               <span
                 key={i}
                 style={{ width: i === safeIndex ? '18px' : '7px', height: '7px', borderRadius: '9999px', backgroundColor: i === safeIndex ? '#fff' : 'rgba(255,255,255,0.5)', transition: 'width 0.2s' }}
@@ -42,7 +69,7 @@ function ImageCarousel({ images }) {
             ))}
           </div>
           <div style={{ position: 'absolute', top: '0.75rem', right: '0.75rem', backgroundColor: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: '9999px', zIndex: 5 }}>
-            {safeIndex + 1} / {images.length}
+            {safeIndex + 1} / {imgs.length}
           </div>
         </>
       )}

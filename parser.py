@@ -323,7 +323,7 @@ async def main():
             media_groups = {}
             
             # Собираем сообщения за последние MAX_AGE_DAYS (берём больше, т.к. много мусора отсеется)
-            async for message in client.iter_messages(channel, limit=80):
+            async for message in client.iter_messages(channel, limit=150):
                 if message.date and (now - message.date > timedelta(days=MAX_AGE_DAYS)):
                     continue
                 if not message.text and not message.photo:

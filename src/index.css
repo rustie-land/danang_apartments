@@ -158,6 +158,23 @@ img {
   .results-split:has(.results-map-pane:not(.mobile-only-hidden)) .results-map-pane {
     height: calc(100vh - 60px);
   }
+  /* Mobile burger menu */
+  .mobile-burger {
+    display: inline-block !important;
+  }
+  .navbar-tools {
+    display: none !important;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 0.6rem !important;
+    padding: 0.75rem 0;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    margin-top: 0.5rem;
+  }
+  .navbar-tools.menu-open {
+    display: flex !important;
+  }
 }
 
 @media (max-width: 480px) {

@@ -5,6 +5,44 @@ import PropertyModal from './PropertyModal.jsx';
 import SafeImage from './SafeImage.jsx';
 import { defaultIcon } from '../leafletIcon.js';
 import { SORT_OPTIONS } from '../data/mockProperties.js';
+import { useState, useRef, useEffect } from 'react';
+
+function CityDropdown({ selectedCity, setSelectedCity, cities }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{ border: 'none', borderRadius: '0.35rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.12)', color: 'var(--color-bg)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+      >
+        🌆 {selectedCity === 'All' ? 'Все города' : selectedCity} ▾
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: '110%', right: 0, backgroundColor: '#fff', borderRadius: '0.5rem', boxShadow: 'var(--shadow-strong)', padding: '0.4rem', minWidth: '160px', zIndex: 2000 }}>
+          {cities.map((c) => (
+            <button
+              key={c}
+              onClick={() => { setSelectedCity(c); setOpen(false); }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: selectedCity === c ? 'var(--color-bg-alt)' : 'transparent', color: 'var(--color-deep)', padding: '0.45rem 0.6rem', borderRadius: '0.35rem', fontSize: '0.8rem', fontWeight: selectedCity === c ? 700 : 400, cursor: 'pointer' }}
+            >
+              {c === 'All' ? 'Все города' : c}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ResultsPage({
   properties,
@@ -24,10 +62,14 @@ export default function ResultsPage({
   onCloseModal,
   mobileView,
   setMobileView,
+  cities,
+  selectedCity,
+  setSelectedCity,
   currency,
   setCurrency,
   convertPrice
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <header className="navbar" style={{ height: '60px', backgroundColor: 'var(--color-deep)', color: 'var(--color-bg)', zIndex: 1000, flexWrap: 'wrap' }}>
@@ -41,6 +83,16 @@ export default function ResultsPage({
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button
+            className="mobile-burger"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Меню"
+            style={{ display: 'none', border: 'none', backgroundColor: 'rgba(255,255,255,0.12)', color: 'var(--color-bg)', borderRadius: '0.4rem', padding: '0.4rem 0.6rem', fontSize: '1rem', cursor: 'pointer' }}
+          >
+            ☰
+          </button>
+
+          <div className={`navbar-tools${menuOpen ? ' menu-open' : ''}`} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }} htmlFor="sort-select">
             Сортировка:
           </label>
@@ -86,6 +138,8 @@ export default function ResultsPage({
                 {cur}
               </button>
             ))}
+          </div>
+          <CityDropdown selectedCity={selectedCity} setSelectedCity={setSelectedCity} cities={cities} />
           </div>
         </div>
       </header>

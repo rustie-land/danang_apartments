@@ -1,5 +1,43 @@
 import SafeImage from './SafeImage.jsx';
 import FilterForm from './FilterForm.jsx';
+import { useState, useRef, useEffect } from 'react';
+
+function CityDropdown({ selectedCity, setSelectedCity, cities }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{ border: '1px solid var(--color-border-strong)', borderRadius: '0.35rem', padding: '0.4rem 0.6rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: 'var(--color-bg-alt)', color: 'var(--color-deep)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+      >
+        🌆 {selectedCity === 'All' ? 'Все города' : selectedCity} ▾
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: '110%', right: 0, backgroundColor: '#fff', borderRadius: '0.5rem', boxShadow: 'var(--shadow-strong)', padding: '0.4rem', minWidth: '160px', zIndex: 2000 }}>
+          {cities.map((c) => (
+            <button
+              key={c}
+              onClick={() => { setSelectedCity(c); setOpen(false); }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: selectedCity === c ? 'var(--color-bg-alt)' : 'transparent', color: 'var(--color-deep)', padding: '0.45rem 0.6rem', borderRadius: '0.35rem', fontSize: '0.8rem', fontWeight: selectedCity === c ? 700 : 400, cursor: 'pointer' }}
+            >
+              {c === 'All' ? 'Все города' : c}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function LandingPage({ filterProps, totalFilteredCount, onGoToMap, cities, selectedCity, setSelectedCity, currency, setCurrency }) {
   const currencyOptions = ['VND', 'USD', 'THB'];
@@ -34,6 +72,8 @@ export default function LandingPage({ filterProps, totalFilteredCount, onGoToMap
               </button>
             ))}
           </div>
+
+          <CityDropdown selectedCity={selectedCity} setSelectedCity={setSelectedCity} cities={cities} />
 
           <button
             onClick={onGoToMap}
