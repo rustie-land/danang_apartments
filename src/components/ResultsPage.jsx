@@ -5,47 +5,12 @@ import PropertyModal from './PropertyModal.jsx';
 import SafeImage from './SafeImage.jsx';
 import { defaultIcon } from '../leafletIcon.js';
 import { SORT_OPTIONS } from '../data/mockProperties.js';
-import { useState, useRef, useEffect } from 'react';
-
-function CityDropdown({ selectedCity, setSelectedCity, cities }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        style={{ border: 'none', borderRadius: '0.35rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.12)', color: 'var(--color-bg)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-      >
-        🌆 {selectedCity === 'All' ? 'Все города' : selectedCity} ▾
-      </button>
-      {open && (
-        <div style={{ position: 'absolute', top: '110%', right: 0, backgroundColor: '#fff', borderRadius: '0.5rem', boxShadow: 'var(--shadow-strong)', padding: '0.4rem', minWidth: '160px', zIndex: 2000 }}>
-          {cities.map((c) => (
-            <button
-              key={c}
-              onClick={() => { setSelectedCity(c); setOpen(false); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: selectedCity === c ? 'var(--color-bg-alt)' : 'transparent', color: 'var(--color-deep)', padding: '0.45rem 0.6rem', borderRadius: '0.35rem', fontSize: '0.8rem', fontWeight: selectedCity === c ? 700 : 400, cursor: 'pointer' }}
-            >
-              {c === 'All' ? 'Все города' : c}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+import { useFilters } from '../FiltersContext.jsx';
+import { useLang } from '../LanguageContext.jsx';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function ResultsPage({
-  properties,
   initialCenter,
   initialZoom,
   selectedPropertyId,
@@ -56,90 +21,48 @@ export default function ResultsPage({
   onSelectProperty,
   onToggleFavorite,
   onOpenDetails,
-  onBackToLanding,
-  onBackToMap,
   activeModalProperty,
   onCloseModal,
   mobileView,
   setMobileView,
-  cities,
-  selectedCity,
-  setSelectedCity,
-  currency,
-  setCurrency,
-  convertPrice
 }) {
+  const { t } = useLang();
+  const { properties, filterByPreferences, convertPrice } = useFilters();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const visible = properties.filter(filterByPreferences);
+  const sorted = [...visible].sort((a, b) => {
+    if (sortBy === 'price-asc') return a.price - b.price;
+    if (sortBy === 'price-desc') return b.price - a.price;
+    return 0;
+  });
+
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header className="navbar" style={{ height: '60px', backgroundColor: 'var(--color-deep)', color: 'var(--color-bg)', zIndex: 1000, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 700, cursor: 'pointer' }} onClick={onBackToLanding}>
-            Asia Stays
-          </span>
-          <span style={{ fontSize: '0.8rem', color: 'var(--color-accent)', backgroundColor: 'rgba(255,255,255,0.08)', padding: '0.3rem 0.75rem', borderRadius: '1rem' }}>
-            {properties.length} объектов в выбранной зоне
-          </span>
+      <header style={{ height: '52px', backgroundColor: 'var(--color-bg-alt)', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button onClick={() => navigate('/map')} style={{ backgroundColor: 'var(--color-deep)', color: 'var(--color-bg)', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '0.4rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
+            📍 {t('changeZone')}
+          </button>
+          <span style={{ fontSize: '0.85rem', color: 'var(--color-muted)' }}>{visible.length} {t('objectsInZone')}</span>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button
-            className="mobile-burger"
-            onClick={() => setMenuOpen((o) => !o)}
-            aria-label="Меню"
-            style={{ display: 'none', border: 'none', backgroundColor: 'rgba(255,255,255,0.12)', color: 'var(--color-bg)', borderRadius: '0.4rem', padding: '0.4rem 0.6rem', fontSize: '1rem', cursor: 'pointer' }}
-          >
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button className="mobile-burger" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu" style={{ display: 'none', border: 'none', backgroundColor: 'var(--color-deep)', color: 'var(--color-bg)', borderRadius: '0.4rem', padding: '0.4rem 0.6rem', fontSize: '1rem', cursor: 'pointer' }}>
             ☰
           </button>
-
-          <div className={`navbar-tools${menuOpen ? ' menu-open' : ''}`} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }} htmlFor="sort-select">
-            Сортировка:
-          </label>
-          <select
-            id="sort-select"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', borderRadius: '0.4rem', border: 'none' }}
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <button onClick={onBackToMap} style={{ backgroundColor: 'rgba(255,255,255,0.12)', color: 'var(--color-bg)', border: 'none', padding: '0.45rem 0.9rem', borderRadius: '0.4rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
-            📍 Изменить зону
-          </button>
-          <div className="mobile-toggle" style={{ display: 'none', gap: '0.4rem', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: '0.6rem', padding: '0.2rem' }}>
-            <button
-              onClick={() => setMobileView('list')}
-              style={{ border: 'none', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: mobileView === 'list' ? 'var(--color-bg)' : 'transparent', color: mobileView === 'list' ? 'var(--color-deep)' : 'var(--color-bg)' }}
-            >
-              Список
-            </button>
-            <button
-              onClick={() => setMobileView('map')}
-              style={{ border: 'none', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: mobileView === 'map' ? 'var(--color-bg)' : 'transparent', color: mobileView === 'map' ? 'var(--color-deep)' : 'var(--color-bg)' }}
-            >
-              Карта
-            </button>
-          </div>
-          <button onClick={onBackToLanding} style={{ backgroundColor: '#ece6d9', color: 'var(--color-deep)', border: 'none', padding: '0.45rem 0.9rem', borderRadius: '0.4rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
-            ⚙️ Фильтры
-          </button>
-          <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: '0.5rem', padding: '0.2rem' }}>
-            {['VND', 'USD', 'THB'].map((cur) => (
-              <button
-                key={cur}
-                onClick={() => setCurrency(cur)}
-                style={{ border: 'none', borderRadius: '0.35rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: currency === cur ? 'var(--color-bg)' : 'transparent', color: currency === cur ? 'var(--color-deep)' : 'var(--color-bg)' }}
-              >
-                {cur}
-              </button>
-            ))}
-          </div>
-          <CityDropdown selectedCity={selectedCity} setSelectedCity={setSelectedCity} cities={cities} />
+          <div className={`navbar-tools${menuOpen ? ' menu-open' : ''}`} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <label style={{ fontSize: '0.75rem', color: 'var(--color-muted)' }}>{t('sort')}:</label>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} style={{ fontSize: '0.8rem', padding: '0.3rem 0.5rem', borderRadius: '0.4rem', border: '1px solid var(--color-border-strong)', backgroundColor: '#fff' }}>
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{t(opt.key)}</option>
+              ))}
+            </select>
+            <div className="mobile-toggle" style={{ display: 'none', gap: '0.4rem', backgroundColor: 'var(--color-bg)', borderRadius: '0.6rem', padding: '0.2rem', border: '1px solid var(--color-border)' }}>
+              <button onClick={() => setMobileView('list')} style={{ border: 'none', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: mobileView === 'list' ? 'var(--color-deep)' : 'transparent', color: mobileView === 'list' ? '#fff' : 'var(--color-deep)' }}>{t('list')}</button>
+              <button onClick={() => setMobileView('map')} style={{ border: 'none', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: mobileView === 'map' ? 'var(--color-deep)' : 'transparent', color: mobileView === 'map' ? '#fff' : 'var(--color-deep)' }}>{t('map')}</button>
+            </div>
           </div>
         </div>
       </header>
@@ -147,19 +70,15 @@ export default function ResultsPage({
       <div className="results-split">
         <div className={`results-list-pane${mobileView === 'map' ? ' mobile-only-hidden' : ''}`}>
           <div style={{ marginBottom: '1rem' }}>
-            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', color: 'var(--color-deep)', margin: '0 0 0.25rem 0' }}>
-              Объекты в выбранной зоне
-            </h2>
-            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-muted)' }}>Нажмите на карточку, чтобы найти объект на карте.</p>
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', color: 'var(--color-deep)', margin: '0 0 0.25rem 0' }}>{t('results')}</h2>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-muted)' }}>{t('noResults')}</p>
           </div>
 
-          {properties.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-muted)' }}>
-              Нет объектов, подходящих под фильтры, в этой зоне. Попробуйте передвинуть карту или изменить фильтры.
-            </div>
+          {sorted.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-muted)' }}>{t('noResults')}</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {properties.map((prop) => (
+              {sorted.map((prop) => (
                 <PropertyCard
                   key={prop.id}
                   property={prop}
@@ -180,26 +99,14 @@ export default function ResultsPage({
             <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
             <MapController coords={mapCenterCoords} />
 
-            {properties.map((prop) => (
-              <Marker
-                key={prop.id}
-                position={[prop.lat, prop.lng]}
-                icon={defaultIcon}
-                eventHandlers={{ click: () => onSelectProperty(prop) }}
-              >
+            {sorted.map((prop) => (
+              <Marker key={prop.id} position={[prop.lat, prop.lng]} icon={defaultIcon} eventHandlers={{ click: () => onSelectProperty(prop) }}>
                 <Popup>
                   <div style={{ width: '180px' }}>
                     <SafeImage src={prop.img} alt={prop.title} style={{ width: '100%', height: '95px', objectFit: 'cover', borderRadius: '0.4rem' }} />
                     <h4 style={{ margin: '0.4rem 0 0.1rem 0', fontSize: '0.85rem', color: 'var(--color-deep)' }}>{prop.title}</h4>
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-accent)' }}>
-                      {convertPrice(prop.price)}
-                    </p>
-                    <button
-                      onClick={() => onOpenDetails(prop)}
-                      style={{ width: '100%', backgroundColor: 'var(--color-deep)', color: '#fff', border: 'none', padding: '0.3rem', borderRadius: '0.3rem', fontSize: '0.7rem', cursor: 'pointer' }}
-                    >
-                      Все детали
-                    </button>
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-accent)' }}>{convertPrice(prop.price)}</p>
+                    <button onClick={() => onOpenDetails(prop)} style={{ width: '100%', backgroundColor: 'var(--color-deep)', color: '#fff', border: 'none', padding: '0.3rem', borderRadius: '0.3rem', fontSize: '0.7rem', cursor: 'pointer' }}>{t('details')}</button>
                   </div>
                 </Popup>
               </Marker>
@@ -208,7 +115,7 @@ export default function ResultsPage({
         </div>
       </div>
 
-      {activeModalProperty && <PropertyModal property={activeModalProperty} onClose={onCloseModal} convertPrice={convertPrice} />}
+      {activeModalProperty && <PropertyModal property={activeModalProperty} onClose={onCloseModal} convertPrice={convertPrice} t={t} />}
     </div>
   );
 }

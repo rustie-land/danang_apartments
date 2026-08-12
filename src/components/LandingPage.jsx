@@ -1,101 +1,37 @@
 import SafeImage from './SafeImage.jsx';
 import FilterForm from './FilterForm.jsx';
-import { useState, useRef, useEffect } from 'react';
+import { useFilters } from '../FiltersContext.jsx';
+import { useLang } from '../LanguageContext.jsx';
+import { useNavigate } from 'react-router-dom';
 
-function CityDropdown({ selectedCity, setSelectedCity, cities }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+export default function LandingPage() {
+  const { t } = useLang();
+  const { filterByPreferences, properties } = useFilters();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  const totalFilteredCount = properties.filter(filterByPreferences).length;
+  const goMap = () => navigate('/map');
 
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button
-        onClick={() => setOpen((o) => !o)}
-        style={{ border: '1px solid var(--color-border-strong)', borderRadius: '0.35rem', padding: '0.4rem 0.6rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: 'var(--color-bg-alt)', color: 'var(--color-deep)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-      >
-        🌆 {selectedCity === 'All' ? 'Все города' : selectedCity} ▾
-      </button>
-      {open && (
-        <div style={{ position: 'absolute', top: '110%', right: 0, backgroundColor: '#fff', borderRadius: '0.5rem', boxShadow: 'var(--shadow-strong)', padding: '0.4rem', minWidth: '160px', zIndex: 2000 }}>
-          {cities.map((c) => (
-            <button
-              key={c}
-              onClick={() => { setSelectedCity(c); setOpen(false); }}
-              style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: selectedCity === c ? 'var(--color-bg-alt)' : 'transparent', color: 'var(--color-deep)', padding: '0.45rem 0.6rem', borderRadius: '0.35rem', fontSize: '0.8rem', fontWeight: selectedCity === c ? 700 : 400, cursor: 'pointer' }}
-            >
-              {c === 'All' ? 'Все города' : c}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function LandingPage({ filterProps, totalFilteredCount, onGoToMap, cities, selectedCity, setSelectedCity, currency, setCurrency }) {
-  const currencyOptions = ['VND', 'USD', 'THB'];
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh' }}>
-      <nav className="navbar" style={{ borderBottom: '1px solid var(--color-border)', flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--color-deep)' }}>
-          Asia Stays
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <label style={{ fontSize: '0.75rem', color: 'var(--color-muted)' }} htmlFor="city-select">Город:</label>
-          <select
-            id="city-select"
-            value={selectedCity}
-            onChange={(e) => setSelectedCity(e.target.value)}
-            style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', borderRadius: '0.4rem', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-alt)', color: 'var(--color-deep)', fontWeight: 600 }}
-          >
-            {cities.map((c) => (
-              <option key={c} value={c}>{c === 'All' ? 'Все города' : c}</option>
-            ))}
-          </select>
-
-          <div style={{ display: 'flex', gap: '0.25rem', backgroundColor: 'var(--color-bg-alt)', borderRadius: '0.5rem', padding: '0.2rem' }}>
-            {currencyOptions.map((cur) => (
-              <button
-                key={cur}
-                onClick={() => setCurrency(cur)}
-                style={{ border: 'none', borderRadius: '0.35rem', padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: currency === cur ? 'var(--color-deep)' : 'transparent', color: currency === cur ? '#fff' : 'var(--color-deep)' }}
-              >
-                {cur}
-              </button>
-            ))}
-          </div>
-
-          <CityDropdown selectedCity={selectedCity} setSelectedCity={setSelectedCity} cities={cities} />
-
-          <button
-            onClick={onGoToMap}
-            style={{ backgroundColor: 'var(--color-deep)', color: 'var(--color-bg)', border: 'none', padding: '0.6rem 1.25rem', borderRadius: '0.5rem', fontWeight: 600, cursor: 'pointer' }}
-          >
-            Выбрать зону поиска ➔
-          </button>
-        </div>
-      </nav>
-
       <section className="hero-grid">
         <div>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--color-accent)', textTransform: 'uppercase', marginBottom: '1rem' }}>
-            — ДОЛГОСРОЧНАЯ АРЕНДА В ДА НАНГЕ
+            — {t('tagline')}
           </div>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '3.75rem', lineHeight: 1.1, color: 'var(--color-deep)', fontWeight: 600, margin: '0 0 1.5rem 0' }}>
-            Квартира, в которую <br />
-            <span style={{ fontStyle: 'italic', fontWeight: 400 }}>захочется возвращаться</span>.
+            {t('heroTitle').split(' across ')[0]} <br />
+            <span style={{ fontStyle: 'italic', fontWeight: 400 }}>across {t('heroTitle').split(' across ')[1] || 'Asia'}</span>.
           </h1>
-          <p style={{ color: 'var(--color-muted)', fontSize: '1rem', lineHeight: 1.6, marginBottom: '2rem', maxWidth: '480px' }}>
-            Задайте бюджет и пожелания, затем изучите доступные варианты прямо на карте в выбранной вами зоне.
+          <p style={{ color: 'var(--color-muted)', fontSize: '1.05rem', lineHeight: 1.6, marginBottom: '2rem', maxWidth: '480px' }}>
+            {t('heroSubtitle')}
           </p>
+          <button
+            onClick={goMap}
+            style={{ backgroundColor: 'var(--color-deep)', color: 'var(--color-bg)', border: 'none', padding: '0.85rem 1.75rem', borderRadius: '0.5rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}
+          >
+            {t('browse')} ➔
+          </button>
         </div>
 
         <div style={{ position: 'relative' }}>
@@ -107,11 +43,11 @@ export default function LandingPage({ filterProps, totalFilteredCount, onGoToMap
             />
             <div style={{ position: 'absolute', bottom: '1.5rem', left: '1.5rem', right: '1.5rem', backgroundColor: 'var(--color-deep)', padding: '1.25rem', borderRadius: '1rem', color: 'var(--color-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', fontWeight: 600 }}>My Khe & Son Tra</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-accent)' }}>Пляжные и тихие жилые районы</div>
+                <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', fontWeight: 600 }}>{t('brand')}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-accent)' }}>{t('heroSubtitle')}</div>
               </div>
-              <button onClick={onGoToMap} style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', padding: '0.5rem 0.85rem', borderRadius: '0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}>
-                Открыть карту ➔
+              <button onClick={goMap} style={{ backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', padding: '0.5rem 0.85rem', borderRadius: '0.5rem', fontSize: '0.75rem', cursor: 'pointer' }}>
+                {t('selectZone')} ➔
               </button>
             </div>
           </div>
@@ -122,18 +58,17 @@ export default function LandingPage({ filterProps, totalFilteredCount, onGoToMap
         <div className="filter-grid">
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--color-accent)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-              — ШАГ 1 / ПРЕДПОЧТЕНИЯ
+              — {t('filters')}
             </div>
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '3rem', color: 'var(--color-deep)', lineHeight: 1.1, margin: '0 0 1rem 0' }}>
-              Задайте нужные <br />
-              <span style={{ fontStyle: 'italic', fontWeight: 400 }}>параметры</span>.
+              {t('heroTitle')}
             </h2>
-            <p style={{ color: 'var(--color-muted)', lineHeight: 1.6, marginBottom: '2rem' }}>
-              На следующем шаге вы выберете зону на интерактивной карте — список объектов обновится в реальном времени.
+            <p style={{ color: 'var(--color-muted)', lineHeight: 1.6, marginBottom: '2rem', fontSize: '1.05rem' }}>
+              {t('selectAreaHint')}
             </p>
           </div>
 
-          <FilterForm {...filterProps} totalFilteredCount={totalFilteredCount} onNext={onGoToMap} />
+          <FilterForm totalFilteredCount={totalFilteredCount} onNext={goMap} />
         </div>
       </section>
     </div>

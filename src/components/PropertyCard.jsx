@@ -1,6 +1,8 @@
 import SafeImage from './SafeImage.jsx';
+import { useLang } from '../LanguageContext.jsx';
 
 export default function PropertyCard({ property, isSelected, isFavorite, onSelect, onToggleFavorite, onOpenDetails, convertPrice }) {
+  const { t } = useLang();
   return (
     <div
       onClick={() => onOpenDetails(property)}
@@ -66,7 +68,7 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
           <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-deep)' }}>
             {convertPrice(property.price)}
-            <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'var(--color-muted)' }}> / мес</span>
+            <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'var(--color-muted)' }}> {t('perMonth')}</span>
           </div>
           <button
             onClick={(e) => {

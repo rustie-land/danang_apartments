@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import SafeImage from './SafeImage.jsx';
+import { useLang } from '../LanguageContext.jsx';
 
 function ImageCarousel({ images }) {
   const imgs = images && images.length > 0 ? images : [];
@@ -77,7 +78,9 @@ function ImageCarousel({ images }) {
   );
 }
 
-export default function PropertyModal({ property, onClose, convertPrice }) {
+export default function PropertyModal({ property, onClose, convertPrice, t: tProp }) {
+  const { t } = useLang();
+  const T = tProp || t;
   const closeButtonRef = useRef(null);
 
   useEffect(() => {
@@ -123,7 +126,7 @@ export default function PropertyModal({ property, onClose, convertPrice }) {
           </h2>
           <div style={{ fontSize: '0.85rem', color: 'var(--color-muted)', marginBottom: '1rem' }}>📍 {property.address}</div>
 
-          <p style={{ color: 'var(--color-text)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>{property.desc}</p>
+          <p style={{ color: 'var(--color-text)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.5rem' }}>{property.desc || 'No description provided.'}</p>
 
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
             {property.amenities.map((a) => (
@@ -135,15 +138,15 @@ export default function PropertyModal({ property, onClose, convertPrice }) {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--color-muted)', textTransform: 'uppercase' }}>Аренда в месяц</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-deep)' }}>{convertPrice(property.price)} <span style={{ fontSize: '0.8rem', fontWeight: 400 }}>/ мес</span></div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-muted)', textTransform: 'uppercase' }}>{T('rentPerMonth')}</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--color-deep)' }}>{convertPrice(property.price)} <span style={{ fontSize: '0.8rem', fontWeight: 400 }}>{T('perMonth')}</span></div>
             </div>
 
             <button
-              onClick={() => alert('Связываемся с менеджером по объекту: ' + property.title)}
+              onClick={() => alert(T('contact') + ': ' + property.title)}
               style={{ backgroundColor: 'var(--color-deep)', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '0.6rem', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
             >
-              Связаться с менеджером
+              {T('contact')}
             </button>
           </div>
         </div>
