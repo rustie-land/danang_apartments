@@ -40,7 +40,7 @@ export default function AreaSelectionPage({ initialCenter, initialZoom, onBounds
       </div>
 
       <MapContainer center={initialCenter} zoom={initialZoom} style={{ height: '100%', width: '100%' }}>
-        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
         <AreaListener onBoundsChange={handleBounds} />
         {inBounds.map((prop) => (
           <Marker key={prop.id} position={[prop.lat, prop.lng]} icon={defaultIcon} />

@@ -25,8 +25,8 @@ export default function FilterForm({ totalFilteredCount, onNext }) {
                 fontSize: '0.85rem',
                 fontWeight: 600,
                 border: 'none',
-                backgroundColor: bedrooms === opt.value ? 'var(--color-deep)' : 'var(--color-bg-alt)',
-                color: bedrooms === opt.value ? '#fff' : '#4a5553',
+                backgroundColor: bedrooms === opt.value ? 'var(--as-accent)' : 'var(--as-surface)',
+                color: bedrooms === opt.value ? '#fff' : 'var(--as-text-muted)',
                 cursor: 'pointer'
               }}
             >
@@ -87,8 +87,8 @@ export default function FilterForm({ totalFilteredCount, onNext }) {
                   fontSize: '0.8rem',
                   fontWeight: 600,
                   border: 'none',
-                  backgroundColor: isSelected ? 'var(--color-deep)' : 'var(--color-bg-alt)',
-                  color: isSelected ? '#fff' : '#4a5553',
+                  backgroundColor: isSelected ? 'var(--as-accent)' : 'var(--as-surface)',
+                  color: isSelected ? '#fff' : 'var(--as-text-muted)',
                   cursor: 'pointer'
                 }}
               >
@@ -106,7 +106,7 @@ export default function FilterForm({ totalFilteredCount, onNext }) {
           width: '100%',
           padding: '0.9rem',
           borderRadius: '0.5rem',
-          backgroundColor: priceRangeInvalid || totalFilteredCount === 0 ? 'var(--color-disabled)' : 'var(--color-deep)',
+          backgroundColor: priceRangeInvalid || totalFilteredCount === 0 ? 'var(--as-text-muted)' : 'var(--as-accent)',
           color: '#fff',
           border: 'none',
           fontWeight: 700,

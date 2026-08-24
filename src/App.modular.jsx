@@ -3,9 +3,15 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LanguageProvider } from './LanguageContext.jsx';
 import { FiltersProvider } from './FiltersContext.jsx';
 import Navbar from './components/Navbar.jsx';
+import Footer from './components/Footer.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import AreaSelectionPage from './components/AreaSelectionPage.jsx';
 import ResultsPage from './components/ResultsPage.jsx';
+import AboutPage from './components/AboutPage.jsx';
+import FAQPage from './components/FAQPage.jsx';
+import ContactsPage from './components/ContactsPage.jsx';
+import OwnersPage from './components/OwnersPage.jsx';
+import TrustPage from './components/TrustPage.jsx';
 import { useProperties } from './features/properties/hooks/useProperties.js';
 import { DEFAULT_CENTER } from './features/properties/api/properties.js';
 
@@ -75,8 +81,14 @@ function AppRoutes() {
             />
           }
         />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/faq" element={<FAQPage />} />
+        <Route path="/contacts" element={<ContactsPage />} />
+        <Route path="/owners" element={<OwnersPage />} />
+        <Route path="/trust" element={<TrustPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Footer />
     </FiltersProvider>
   );
 }

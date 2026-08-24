@@ -46,6 +46,19 @@ export default function ResultsPage({
             📍 {t('changeZone')}
           </button>
           <span style={{ fontSize: '0.85rem', color: 'var(--color-muted)' }}>{visible.length} {t('objectsInZone')}</span>
+          <button
+            onClick={() => {
+              try {
+                const saved = JSON.parse(localStorage.getItem('as_saved_searches') || '[]');
+                saved.push({ ts: Date.now(), city: 'Da Nang', count: visible.length });
+                localStorage.setItem('as_saved_searches', JSON.stringify(saved.slice(-5)));
+                alert('🔔 Search saved! [TEMPLATE] We\'ll notify you of new matches via Telegram/Email.');
+              } catch { alert('🔔 Search saved (template).'); }
+            }}
+            style={{ border: '1px solid var(--as-border)', backgroundColor: '#fff', borderRadius: 'var(--as-radius-pill)', padding: '0.4rem 0.9rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', color: 'var(--as-text)' }}
+          >
+            🔔 Save search
+          </button>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -96,7 +109,7 @@ export default function ResultsPage({
 
         <div className={`results-map-pane${mobileView === 'list' ? ' mobile-only-hidden' : ''}`}>
           <MapContainer center={initialCenter} zoom={initialZoom} style={{ height: '100%', width: '100%' }}>
-            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+            <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
             <MapController coords={mapCenterCoords} />
 
             {sorted.map((prop) => (

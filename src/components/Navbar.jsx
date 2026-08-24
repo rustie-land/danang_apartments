@@ -115,35 +115,47 @@ export default function Navbar() {
         position: 'sticky',
         top: 0,
         zIndex: 1000,
-        backgroundColor: 'var(--color-deep)',
-        color: 'var(--color-bg)',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+        backgroundColor: 'rgba(253,251,247,0.82)',
+        backdropFilter: 'blur(14px)',
+        WebkitBackdropFilter: 'blur(14px)',
+        borderBottom: '1px solid var(--as-border)',
+        color: 'var(--as-text)',
+        boxShadow: '0 2px 10px rgba(26,26,26,0.04)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', padding: '0.6rem 1.5rem' }}>
-        <Link to="/" style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 700, color: 'var(--color-bg)', textDecoration: 'none', cursor: 'pointer' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', padding: '0.7rem 1.5rem' }}>
+        <Link to="/" style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--as-text)', textDecoration: 'none', cursor: 'pointer' }}>
           {t('brand')}
         </Link>
 
+        <div className="nav-links" style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
+          <Link to="/about" style={{ color: 'var(--as-text)', textDecoration: 'none' }}>About</Link>
+          <Link to="/owners" style={{ color: 'var(--as-text)', textDecoration: 'none' }}>Owners</Link>
+          <Link to="/trust" style={{ color: 'var(--as-text)', textDecoration: 'none' }}>Trust</Link>
+          <Link to="/faq" style={{ color: 'var(--as-text)', textDecoration: 'none' }}>FAQ</Link>
+          <Link to="/contacts" style={{ color: 'var(--as-accent)', textDecoration: 'none' }}>Contacts</Link>
+        </div>
+        <style>{`.nav-links{display:none}@media(min-width:1024px){.nav-links{display:flex!important}}`}</style>
+
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <CityDropdown />
-          <div style={{ display: 'flex', gap: '0.2rem', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: '0.5rem', padding: '0.2rem' }}>
+          <div style={{ display: 'flex', gap: '0.2rem', backgroundColor: 'var(--as-surface)', borderRadius: '0.5rem', padding: '0.2rem' }}>
             {['VND', 'USD', 'THB'].map((cur) => (
-              <button key={cur} onClick={() => setCurrency(cur)} style={{ border: 'none', borderRadius: '0.35rem', padding: '0.35rem 0.55rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: currency === cur ? 'var(--color-bg)' : 'transparent', color: currency === cur ? 'var(--color-deep)' : 'var(--color-bg)' }}>
+              <button key={cur} onClick={() => setCurrency(cur)} style={{ border: 'none', borderRadius: '0.35rem', padding: '0.35rem 0.55rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: currency === cur ? 'var(--as-accent)' : 'transparent', color: currency === cur ? '#fff' : 'var(--as-text)' }}>
                 {cur}
               </button>
             ))}
           </div>
 
-          <button className="mobile-burger" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu" style={{ display: 'none', border: 'none', backgroundColor: 'rgba(255,255,255,0.12)', color: 'var(--color-bg)', borderRadius: '0.4rem', padding: '0.4rem 0.6rem', fontSize: '1rem', cursor: 'pointer' }}>
+          <button className="mobile-burger" onClick={() => setMenuOpen((o) => !o)} aria-label="Menu" style={{ display: 'none', border: 'none', backgroundColor: 'var(--as-surface)', color: 'var(--as-text)', borderRadius: '0.4rem', padding: '0.4rem 0.6rem', fontSize: '1rem', cursor: 'pointer' }}>
             ☰
           </button>
 
           <div className={`navbar-tools${menuOpen ? ' menu-open' : ''}`} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button onClick={() => setPopover((p) => !p)} style={{ border: 'none', borderRadius: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', backgroundColor: 'var(--color-bg)', color: 'var(--color-deep)' }}>
+            <button onClick={() => setPopover((p) => !p)} style={{ border: '1px solid var(--as-border)', borderRadius: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', backgroundColor: '#fff', color: 'var(--as-text)' }}>
               {t('allFilters')}
             </button>
-            <button onClick={toggle} style={{ border: '1px solid rgba(255,255,255,0.3)', borderRadius: '0.4rem', padding: '0.4rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', backgroundColor: 'transparent', color: 'var(--color-bg)' }}>
+            <button onClick={toggle} style={{ border: '1px solid var(--as-border)', borderRadius: '0.4rem', padding: '0.4rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', backgroundColor: 'transparent', color: 'var(--as-text)' }}>
               {lang === 'en' ? 'RU' : 'EN'}
             </button>
           </div>

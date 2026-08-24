@@ -52,3 +52,5 @@ apartments_backup.json
 
 # Local read-only diagnostic helpers (not committed)
 _check_read.py
+.vercel
+.env*
