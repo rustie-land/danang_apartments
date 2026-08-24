@@ -8,7 +8,7 @@ import { SORT_OPTIONS } from '../data/mockProperties.js';
 import { useFilters } from '../FiltersContext.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function ResultsPage({
   initialCenter,
@@ -30,6 +30,22 @@ export default function ResultsPage({
   const { properties, filterByPreferences, convertPrice } = useFilters();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [savedSearches, setSavedSearches] = useState([]);
+  const [showSaved, setShowSaved] = useState(false);
+
+  useEffect(() => {
+    try { setSavedSearches(JSON.parse(localStorage.getItem('as_saved_searches') || '[]')); } catch { setSavedSearches([]); }
+  }, []);
+
+  const saveSearch = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('as_saved_searches') || '[]');
+      saved.push({ ts: Date.now(), label: `${selectedCity && selectedCity !== 'All' ? selectedCity : 'All'} · ${visible.length} stays` });
+      localStorage.setItem('as_saved_searches', JSON.stringify(saved.slice(-5)));
+      setSavedSearches(saved.slice(-5));
+      alert('🔔 Search saved! [TEMPLATE] Notifications via Telegram/Email coming soon.');
+    } catch { alert('🔔 Search saved (template).'); }
+  };
 
   const visible = properties.filter(filterByPreferences);
   const sorted = [...visible].sort((a, b) => {
@@ -46,19 +62,35 @@ export default function ResultsPage({
             📍 {t('changeZone')}
           </button>
           <span style={{ fontSize: '0.85rem', color: 'var(--color-muted)' }}>{visible.length} {t('objectsInZone')}</span>
-          <button
-            onClick={() => {
-              try {
-                const saved = JSON.parse(localStorage.getItem('as_saved_searches') || '[]');
-                saved.push({ ts: Date.now(), city: 'Da Nang', count: visible.length });
-                localStorage.setItem('as_saved_searches', JSON.stringify(saved.slice(-5)));
-                alert('🔔 Search saved! [TEMPLATE] We\'ll notify you of new matches via Telegram/Email.');
-              } catch { alert('🔔 Search saved (template).'); }
-            }}
-            style={{ border: '1px solid var(--as-border)', backgroundColor: '#fff', borderRadius: 'var(--as-radius-pill)', padding: '0.4rem 0.9rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', color: 'var(--as-text)' }}
-          >
-            🔔 Save search
-          </button>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowSaved((s) => !s)}
+              style={{ border: '1px solid var(--as-border)', backgroundColor: '#fff', borderRadius: 'var(--as-radius-pill)', padding: '0.4rem 0.9rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', color: 'var(--as-text)' }}
+            >
+              🔔 {savedSearches.length > 0 ? `Saved (${savedSearches.length})` : 'Save search'}
+            </button>
+            {showSaved && (
+              <div style={{ position: 'absolute', top: '110%', right: 0, backgroundColor: '#fff', borderRadius: '0.75rem', boxShadow: 'var(--as-shadow-strong)', padding: '0.75rem', width: 'min(90vw, 280px)', zIndex: 2000 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--as-text-muted)', letterSpacing: '0.05em' }}>Saved searches</span>
+                  <button onClick={() => { localStorage.removeItem('as_saved_searches'); setSavedSearches([]); }} style={{ fontSize: '0.7rem', color: 'var(--as-accent)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
+                </div>
+                {savedSearches.length === 0 ? (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--as-text-muted)' }}>No saved searches yet.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    {savedSearches.slice().reverse().map((s, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.6rem', backgroundColor: 'var(--as-surface)', borderRadius: '0.5rem', fontSize: '0.8rem' }}>
+                        <span style={{ color: 'var(--as-text)' }}>{s.label}</span>
+                        <button onClick={() => saveSearch()} style={{ fontSize: '0.7rem', color: 'var(--as-accent)', background: 'none', border: 'none', cursor: 'pointer' }}>+ New</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button onClick={saveSearch} style={{ marginTop: '0.5rem', width: '100%', backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', padding: '0.5rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>🔔 Save current search</button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>

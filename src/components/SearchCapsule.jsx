@@ -16,11 +16,25 @@ export default function SearchCapsule({ onSearch }) {
   const toggle = (seg) => setOpenSeg(openSeg === seg ? null : seg);
   const activeCount = (pets ? 1 : 0) + (noCommission ? 1 : 0) + (repair ? 1 : 0) + (term !== 'Any' ? 1 : 0) + amenities.length;
 
+  // keyboard support: Enter/Space opens the segment
+  const onKey = (e, seg) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(seg); }
+  };
+
+  const segProps = (seg) => ({
+    className: `as-seg ${openSeg === seg ? 'open' : ''}`,
+    onClick: () => toggle(seg),
+    role: 'button',
+    tabIndex: 0,
+    onKeyDown: (e) => onKey(e, seg),
+    'aria-expanded': openSeg === seg,
+  });
+
   return (
     <div className="as-capsule-wrap">
       <div className="as-capsule" onClick={(e) => { if (!e.target.closest('.as-seg')) setOpenSeg(null); }}>
         {/* WHERE */}
-        <div className={`as-seg ${openSeg === 'where' ? 'open' : ''}`} onClick={() => toggle('where')}>
+        <div {...segProps('where')}>
           <label>Where</label>
           <div className="val">{selectedCity && selectedCity !== 'All' ? selectedCity : 'Da Nang, VN'}</div>
           <div className="as-dropdown">
@@ -31,7 +45,7 @@ export default function SearchCapsule({ onSearch }) {
         </div>
 
         {/* WHEN */}
-        <div className={`as-seg ${openSeg === 'when' ? 'open' : ''}`} onClick={() => toggle('when')}>
+        <div {...segProps('when')}>
           <label>When</label>
           <div className="val muted">Flexible · long-term</div>
           <div className="as-dropdown">
@@ -39,14 +53,14 @@ export default function SearchCapsule({ onSearch }) {
             <input type="text" placeholder="Move-in date (flexible)" />
             <div className="as-term-row">
               {['1+mo', '6+mo', '1yr+'].map((t) => (
-                <button key={t} className={term === t ? 'on' : ''} onClick={() => setTerm(term === t ? 'Any' : t)}>{t}</button>
+                <button key={t} title="Minimum rental term" className={term === t ? 'on' : ''} onClick={() => setTerm(term === t ? 'Any' : t)}>{t}</button>
               ))}
             </div>
           </div>
         </div>
 
         {/* HOME */}
-        <div className={`as-seg ${openSeg === 'home' ? 'open' : ''}`} onClick={() => toggle('home')}>
+        <div {...segProps('home')}>
           <label>Home</label>
           <div className="val">{bedrooms && bedrooms !== 'Any' ? `${bedrooms} rooms` : 'Any'} · {minPrice || '8M'}–{maxPrice || '25M'}</div>
           <div className="as-dropdown">
@@ -69,7 +83,7 @@ export default function SearchCapsule({ onSearch }) {
         </div>
 
         {/* MORE */}
-        <div className={`as-seg ${openSeg === 'more' ? 'open' : ''}`} onClick={() => toggle('more')}>
+        <div {...segProps('more')}>
           <label>More</label>
           <div className="val">{activeCount > 0 ? `${activeCount} selected` : 'Pets · amenities'}</div>
           <div className="as-dropdown" style={{ minWidth: '320px' }}>

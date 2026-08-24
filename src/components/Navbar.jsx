@@ -6,8 +6,14 @@ import { BEDROOM_OPTIONS, AMENITY_OPTIONS } from '../i18n.js';
 
 function FilterPopover({ onClose }) {
   const { t } = useLang();
-  const { bedrooms, setBedrooms, minPrice, setMinPrice, maxPrice, setMaxPrice, amenities, toggleAmenity } = useFilters();
+  const { bedrooms, setBedrooms, minPrice, setMinPrice, maxPrice, setMaxPrice, amenities, toggleAmenity, term, setTerm, pets, setPets, noCommission, setNoCommission, repair, setRepair, selectedCity, setSelectedCity } = useFilters();
   const ref = useRef(null);
+
+  const clearAll = () => {
+    setBedrooms('Any'); setMinPrice('0'); setMaxPrice('25000000');
+    amenities.forEach((a) => toggleAmenity(a));
+    setTerm('Any'); setPets(false); setNoCommission(false); setRepair(false); setSelectedCity('All');
+  };
 
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
@@ -30,6 +36,11 @@ function FilterPopover({ onClose }) {
         zIndex: 3000,
       }}
     >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.15rem', fontWeight: 600, color: 'var(--as-text)' }}>{t('allFilters') || 'Filters'}</div>
+        <button onClick={clearAll} style={{ fontSize: '0.75rem', color: 'var(--as-accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>{t('clearAll') || 'Clear all'}</button>
+      </div>
+
       <div style={{ marginBottom: '1rem' }}>
         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>{t('bedrooms')}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
@@ -48,9 +59,12 @@ function FilterPopover({ onClose }) {
       <div style={{ marginBottom: '1rem' }}>
         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>{t('priceRange')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-          <input type="number" min="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} aria-label="min" style={{ padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid var(--as-border)', backgroundColor: 'var(--as-surface)', fontSize: '0.85rem', color: 'var(--as-text)', fontWeight: 600 }} />
-          <input type="number" min="0" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} aria-label="max" style={{ padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: '1px solid var(--as-border)', backgroundColor: 'var(--as-surface)', fontSize: '0.85rem', color: 'var(--as-text)', fontWeight: 600 }} />
+          <input type="number" min="0" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} aria-label="min" style={{ padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: `1px solid ${Number(minPrice) > Number(maxPrice) && maxPrice ? 'var(--as-accent)' : 'var(--as-border)'}`, backgroundColor: 'var(--as-surface)', fontSize: '0.85rem', color: 'var(--as-text)', fontWeight: 600 }} />
+          <input type="number" min="0" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} aria-label="max" style={{ padding: '0.5rem 0.7rem', borderRadius: '0.4rem', border: `1px solid ${Number(maxPrice) < Number(minPrice) && minPrice ? 'var(--as-accent)' : 'var(--as-border)'}`, backgroundColor: 'var(--as-surface)', fontSize: '0.85rem', color: 'var(--as-text)', fontWeight: 600 }} />
         </div>
+        {Number(minPrice) > Number(maxPrice) && maxPrice > 0 && (
+          <div style={{ fontSize: '0.7rem', color: 'var(--as-accent)', marginTop: '0.3rem' }}>Min should be ≤ max</div>
+        )}
         <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', margin: '0.75rem 0 0.4rem', letterSpacing: '0.05em' }}>{t('amenities')}</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
           {AMENITY_OPTIONS.map((a) => {

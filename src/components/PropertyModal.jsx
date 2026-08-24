@@ -131,7 +131,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
           {/* Key terms (long-term) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px,1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
             <div style={{ backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.75rem' }}>
-              <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--as-text-muted)' }}>Deposit</div>
+              <div title="Refundable security deposit (typically 1 month rent)" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--as-text-muted)' }}>Deposit</div>
               <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.deposit ? convertPrice(property.deposit) : '[TEMPLATE] 1 mo'}</div>
             </div>
             <div style={{ backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.75rem' }}>
@@ -168,11 +168,15 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
             </div>
 
             <button
-              onClick={() => alert(T('contact') + ': ' + property.title)}
+              onClick={() => {
+                const msg = encodeURIComponent(`Hi! I'm interested in "${property.title}" (${convertPrice(property.price)}/mo). Is it still available?`);
+                window.open(`https://t.me/ainavii?text=${msg}`, '_blank');
+              }}
               style={{ backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
             >
               {T('contact')}
             </button>
+            <a href="mailto:savvin.rg@gmail.com?subject=Asia Stays inquiry" style={{ fontSize: '0.75rem', color: 'var(--as-text-muted)', textDecoration: 'underline', marginLeft: '0.5rem' }}>or email</a>
           </div>
         </div>
       </div>

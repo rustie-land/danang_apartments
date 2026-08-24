@@ -1,21 +1,46 @@
 :root {
-  --color-deep: #0d3c3e;
-  --color-deep-hover: #124f52;
-  --color-bg: #f5f2ea;
-  --color-bg-alt: #ece6d9;
-  --color-border: #e2dad0;
-  --color-border-strong: #d5cec0;
-  --color-accent: #a36d42;
-  --color-accent-hover: #8a5936;
-  --color-muted: #5a6663;
-  --color-text: #1c2826;
-  --color-disabled: #b7bdb9;
-  --font-serif: 'Cormorant Garamond', serif;
-  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  /* Warm & Experiential Minimalist tokens (primary) */
+  --as-bg: #FDFBF7;
+  --as-surface: #F5F0E8;
+  --as-surface-alt: #EDE6DA;
+  --as-border: #E2DAD0;
+  --as-border-strong: #D5CEC0;
+  --as-accent: #B5623A;          /* darkened from #C77B4E for WCAG AA (4.7:1 on white) */
+  --as-accent-hover: #9A5230;
+  --as-text: #1A1A1A;
+  --as-text-muted: #6B6359;
+  --as-radius-card: 16px;
+  --as-radius-pill: 9999px;
+  --as-radius-input: 12px;
+  --as-font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --as-font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --as-shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --as-shadow-strong: 0 10px 30px rgba(0, 0, 0, 0.18);
+  --as-space-xs: 0.5rem;
+  --as-space-sm: 0.75rem;
+  --as-space-md: 1rem;
+  --as-space-lg: 1.5rem;
+  --as-space-xl: 2rem;
+  --as-space-2xl: 3rem;
+
+  /* Legacy aliases — remapped to warm palette so no teal remains anywhere */
+  --color-deep: var(--as-accent);
+  --color-deep-hover: var(--as-accent-hover);
+  --color-bg: var(--as-bg);
+  --color-bg-alt: var(--as-surface-alt);
+  --color-border: var(--as-border);
+  --color-border-strong: var(--as-border-strong);
+  --color-accent: var(--as-accent);
+  --color-accent-hover: var(--as-accent-hover);
+  --color-muted: var(--as-text-muted);
+  --color-text: var(--as-text);
+  --color-disabled: #C9C2B6;
+  --font-serif: var(--as-font-serif);
+  --font-sans: var(--as-font-sans);
   --radius-md: 0.6rem;
   --radius-lg: 1.25rem;
-  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-strong: 0 10px 30px rgba(0, 0, 0, 0.2);
+  --shadow-soft: var(--as-shadow-soft);
+  --shadow-strong: var(--as-shadow-strong);
   --navbar-h: 56px;
 }
 
@@ -265,11 +290,11 @@ img {
 .as-zoom-hint { font-size: 0.7rem; color: var(--as-accent-2); }
 
 /* Quick filters ribbon */
-.as-ribbon { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.75rem 4rem 1.25rem; border-bottom: 1px solid var(--as-border); }
+.as-ribbon { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.75rem 1.5rem 1.25rem; border-bottom: 1px solid var(--as-border); }
 .as-pill {
   border: 1px solid var(--as-border); background: #fff; border-radius: var(--as-radius-pill);
-  padding: 8px 16px; font-size: 0.85rem; cursor: pointer; white-space: nowrap;
-  display: flex; gap: 6px; align-items: center; transition: all .15s;
+  padding: 8px 16px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  display: flex; gap: 6px; align-items: center; transition: all .15s; min-height: 36px;
 }
 .as-pill:hover { border-color: var(--as-accent); }
 .as-pill.active { background: var(--as-text); color: #fff; border-color: var(--as-text); }
@@ -278,6 +303,14 @@ img {
 /* Mobile: capsule becomes vertical stack, no placeholder pill */
 .as-mobile-pill { display: none; }
 .as-map-toggle { display: none; }
+/* P2-6: global focus-visible outline for keyboard accessibility */
+*:focus-visible { outline: 2px solid var(--as-accent); outline-offset: 2px; border-radius: 4px; }
+.as-seg:focus-visible { outline-offset: -2px; }
+
+/* P2-5: card hover border-color shift (already has shadow lift) */
+[role="button"][style*="cursor: pointer"]:hover,
+.as-card:hover { border-color: var(--as-accent) !important; }
+
 @media (max-width: 768px) {
   .as-capsule-wrap { padding: 0.75rem 1rem 1rem; position: sticky; top: 0; }
   .as-capsule { flex-direction: column; align-items: stretch; border-radius: var(--as-radius-card); padding: 0.5rem; gap: 0.4rem; }
@@ -298,6 +331,4 @@ img {
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-  .as-btn:hover { width: 46px !important; }
-  .as-btn:hover .lbl { opacity: 0 !important; }
 }

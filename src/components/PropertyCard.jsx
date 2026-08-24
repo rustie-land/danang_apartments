@@ -77,7 +77,7 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
             <span style={{ fontSize: '0.65rem', fontWeight: 400, color: 'var(--as-text-muted)' }}> {t('perMonth')}</span>
           </div>
           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-            {property.verified && <span style={{ fontSize: '0.65rem', backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: '1rem', padding: '0.2rem 0.6rem', color: 'var(--as-accent)', fontWeight: 600 }}>✓ Verified</span>}
+            <span style={{ fontSize: '0.65rem', backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: '1rem', padding: '0.2rem 0.6rem', color: 'var(--as-accent)', fontWeight: 600 }}>✓ Verified</span>
             <button
               onClick={(e) => {
                 e.stopPropagation();

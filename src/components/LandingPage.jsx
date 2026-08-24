@@ -8,16 +8,20 @@ import { useNavigate } from 'react-router-dom';
 
 export default function LandingPage() {
   const { t } = useLang();
-  const { filterByPreferences, properties } = useFilters();
+  const { filterByPreferences, properties, selectedCity } = useFilters();
   const navigate = useNavigate();
 
   const totalFilteredCount = properties.filter(filterByPreferences).length;
+  const goResults = () => navigate('/results');
   const goMap = () => navigate('/map');
 
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh' }}>
-      <SearchCapsule onSearch={goMap} />
-      <QuickFilters onAllFilters={() => navigate('/results')} />
+      <SearchCapsule onSearch={goResults} />
+      <QuickFilters onAllFilters={goResults} />
+      <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--as-text-muted)', paddingBottom: '0.5rem' }}>
+        {totalFilteredCount} {t('apartmentsAvailable') || 'apartments available'} {selectedCity && selectedCity !== 'All' ? `in ${selectedCity}` : 'across Asia'}
+      </div>
 
       <section className="hero-grid">
         <div>
@@ -32,17 +36,17 @@ export default function LandingPage() {
             {t('heroSubtitle')}
           </p>
           <button
-            onClick={goMap}
+            onClick={goResults}
             style={{ backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', padding: '0.85rem 1.75rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', transition: 'transform .2s, background .2s' }}
             onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.background = 'var(--as-accent-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.background = 'var(--as-accent)'; }}
           >
-            {t('browse')} ➔
+            Find rentals ➔
           </button>
         </div>
 
         <div style={{ position: 'relative' }}>
-          <div style={{ width: '100%', height: '420px', borderRadius: 'var(--as-radius-card)', overflow: 'hidden', position: 'relative', background: 'linear-gradient(135deg, #E8DCC8 0%, #D9A679 55%, #C77B4E 100%)', display: 'flex', alignItems: 'flex-end', padding: '1.5rem' }}>
+          <div style={{ width: '100%', height: '420px', borderRadius: 'var(--as-radius-card)', overflow: 'hidden', position: 'relative', background: 'linear-gradient(135deg, #E8DCC8 0%, #D9A679 55%, #B5623A 100%)', display: 'flex', alignItems: 'flex-end', padding: '1.5rem' }}>
             <div style={{ position: 'absolute', bottom: '1.5rem', left: '1.5rem', right: '1.5rem', backgroundColor: 'rgba(26,26,26,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', padding: '1.25rem', borderRadius: 'var(--as-radius-card)', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.25rem', fontWeight: 600 }}>{t('brand')}</div>
@@ -62,7 +66,7 @@ export default function LandingPage() {
             <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--as-accent)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
               — {t('howItWorks') || 'How it works'}
             </div>
-            <h2 style={{ fontFamily: 'var(--as-font-serif)', fontSize: '3rem', color: 'var(--as-text)', lineHeight: 1.1, margin: '0 0 1rem 0' }}>
+            <h2 style={{ fontFamily: 'var(--as-font-serif)', fontSize: '2.5rem', color: 'var(--as-text)', lineHeight: 1.15, margin: '0 0 1rem 0' }}>
               {t('filtersTitle') || 'Refine your search'}
             </h2>
             <p style={{ color: 'var(--as-text-muted)', lineHeight: 1.6, marginBottom: '2rem', fontSize: '1.05rem' }}>
