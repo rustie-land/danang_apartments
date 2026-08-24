@@ -28,7 +28,7 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
     >
       <SafeImage
         src={property.img}
-        alt={property.title}
+        alt={`${property.title} — ${property.type || 'apartment'} in ${property.area || 'Asia'}${property.beds ? `, ${property.beds}` : ''}`}
         style={{ width: '140px', height: '140px', objectFit: 'cover', flexShrink: 0 }}
       />
 

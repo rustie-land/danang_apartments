@@ -17,6 +17,9 @@ export default function LandingPage() {
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh' }}>
       <SearchCapsule onSearch={goMap} />
+      <div className="as-mobile-pill">
+        <button onClick={() => navigate('/results')}>🔍 Search rentals</button>
+      </div>
       <QuickFilters onAllFilters={() => navigate('/results')} />
 
       <section className="hero-grid">
@@ -63,7 +66,7 @@ export default function LandingPage() {
               — {t('filters')}
             </div>
             <h2 style={{ fontFamily: 'var(--as-font-serif)', fontSize: '3rem', color: 'var(--as-text)', lineHeight: 1.1, margin: '0 0 1rem 0' }}>
-              {t('heroTitle')}
+              {t('filtersTitle') || 'Refine your search'}
             </h2>
             <p style={{ color: 'var(--as-text-muted)', lineHeight: 1.6, marginBottom: '2rem', fontSize: '1.05rem' }}>
               {t('selectAreaHint')}
