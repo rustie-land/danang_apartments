@@ -10,6 +10,10 @@ export function FiltersProvider({ children, properties, cities }) {
   const [amenities, setAmenities] = useState([]);
   const [selectedCity, setSelectedCity] = useState('All');
   const [currency, setCurrency] = useState('VND'); // VND | USD | THB
+  const [term, setTerm] = useState('Any'); // Any | 1+mo | 6+mo | 1yr+
+  const [pets, setPets] = useState(false);
+  const [noCommission, setNoCommission] = useState(false);
+  const [repair, setRepair] = useState(false);
 
   const toggleAmenity = useCallback((tag) => {
     setAmenities((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -42,9 +46,13 @@ export function FiltersProvider({ children, properties, cities }) {
           const clean = tag.replace('#', '').toLowerCase();
           return item.amenities.some((it) => String(it).replace('#', '').toLowerCase() === clean);
         });
-      return matchBeds && matchPrice && matchAmenities;
+      const matchTerm = term === 'Any' || (item.term && item.term === term);
+      const matchPets = !pets || (item.amenities || []).some((a) => String(a).replace('#','').toLowerCase() === 'pet');
+      const matchCommission = !noCommission || item.noCommission === true;
+      const matchRepair = !repair || item.repair === true;
+      return matchBeds && matchPrice && matchAmenities && matchTerm && matchPets && matchCommission && matchRepair;
     },
-    [selectedCity, bedrooms, minPrice, maxPrice, amenities]
+    [selectedCity, bedrooms, minPrice, maxPrice, amenities, term, pets, noCommission, repair]
   );
 
   const value = {
@@ -62,6 +70,14 @@ export function FiltersProvider({ children, properties, cities }) {
     setSelectedCity,
     currency,
     setCurrency,
+    term,
+    setTerm,
+    pets,
+    setPets,
+    noCommission,
+    setNoCommission,
+    repair,
+    setRepair,
     convertPrice,
     filterByPreferences,
   };

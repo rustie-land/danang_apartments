@@ -17,9 +17,6 @@ export default function LandingPage() {
   return (
     <div style={{ backgroundColor: 'var(--color-bg)', minHeight: '100vh' }}>
       <SearchCapsule onSearch={goMap} />
-      <div className="as-mobile-pill">
-        <button onClick={() => navigate('/results')}>🔍 Search rentals</button>
-      </div>
       <QuickFilters onAllFilters={() => navigate('/results')} />
 
       <section className="hero-grid">
@@ -63,7 +60,7 @@ export default function LandingPage() {
         <div className="filter-grid">
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--as-accent)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-              — {t('filters')}
+              — {t('howItWorks') || 'How it works'}
             </div>
             <h2 style={{ fontFamily: 'var(--as-font-serif)', fontSize: '3rem', color: 'var(--as-text)', lineHeight: 1.1, margin: '0 0 1rem 0' }}>
               {t('filtersTitle') || 'Refine your search'}
@@ -73,7 +70,21 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <FilterForm totalFilteredCount={totalFilteredCount} onNext={goMap} />
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            {[
+              ['1', 'Search', 'Filter by city, move-in date, term, rooms and budget.'],
+              ['2', 'Pick an area', 'Pan the map and choose your zone — only relevant stays show.'],
+              ['3', 'Contact owner', 'Message verified owners directly. No agencies, no fees.'],
+            ].map(([n, t1, d]) => (
+              <div key={n} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', backgroundColor: '#fff', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '1.1rem' }}>
+                <div style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--as-accent)', flexShrink: 0, width: '2rem' }}>{n}</div>
+                <div>
+                  <div style={{ fontWeight: 700, color: 'var(--as-text)', marginBottom: '0.25rem' }}>{t1}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--as-text-muted)', lineHeight: 1.5 }}>{d}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </div>

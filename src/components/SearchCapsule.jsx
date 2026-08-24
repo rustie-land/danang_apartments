@@ -1,11 +1,20 @@
 import { useState } from 'react';
 import { useFilters } from '../FiltersContext.jsx';
 
+const AMENITY_OPTS = ['#pool', '#ac', '#balcony', '#gym', '#pet', '#kitchen', '#sea', '#beach'];
+
 export default function SearchCapsule({ onSearch }) {
-  const { bedrooms, setBedrooms, minPrice, setMinPrice, maxPrice, setMaxPrice, selectedCity, setSelectedCity } = useFilters();
+  const {
+    bedrooms, setBedrooms,
+    minPrice, setMinPrice, maxPrice, setMaxPrice,
+    selectedCity, setSelectedCity,
+    term, setTerm, pets, setPets, noCommission, setNoCommission, repair, setRepair,
+    amenities, toggleAmenity,
+  } = useFilters();
   const [openSeg, setOpenSeg] = useState(null);
 
   const toggle = (seg) => setOpenSeg(openSeg === seg ? null : seg);
+  const activeCount = (pets ? 1 : 0) + (noCommission ? 1 : 0) + (repair ? 1 : 0) + (term !== 'Any' ? 1 : 0) + amenities.length;
 
   return (
     <div className="as-capsule-wrap">
@@ -29,9 +38,9 @@ export default function SearchCapsule({ onSearch }) {
             <h4>Move-in & Term</h4>
             <input type="text" placeholder="Move-in date (flexible)" />
             <div className="as-term-row">
-              <button className="on">1+ mo</button>
-              <button>6+ mo</button>
-              <button>1 yr+</button>
+              {['1+mo', '6+mo', '1yr+'].map((t) => (
+                <button key={t} className={term === t ? 'on' : ''} onClick={() => setTerm(term === t ? 'Any' : t)}>{t}</button>
+              ))}
             </div>
           </div>
         </div>
@@ -56,6 +65,26 @@ export default function SearchCapsule({ onSearch }) {
             <div className="as-zoom-hint">8M – 25M VND / mo · drag to adjust</div>
             <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} style={{ width: '45%', display: 'inline-block', marginRight: '5%' }} />
             <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={{ width: '45%', display: 'inline-block' }} />
+          </div>
+        </div>
+
+        {/* MORE */}
+        <div className={`as-seg ${openSeg === 'more' ? 'open' : ''}`} onClick={() => toggle('more')}>
+          <label>More</label>
+          <div className="val">{activeCount > 0 ? `${activeCount} selected` : 'Pets · amenities'}</div>
+          <div className="as-dropdown" style={{ minWidth: '320px' }}>
+            <h4>Preferences</h4>
+            <div className="as-toggle-row">
+              <label className="as-toggle"><input type="checkbox" checked={pets} onChange={(e) => setPets(e.target.checked)} /> 🐾 Pets allowed</label>
+              <label className="as-toggle"><input type="checkbox" checked={noCommission} onChange={(e) => setNoCommission(e.target.checked)} /> 🚫 No commission</label>
+              <label className="as-toggle"><input type="checkbox" checked={repair} onChange={(e) => setRepair(e.target.checked)} /> 🛠 Repair included</label>
+            </div>
+            <h4 style={{ marginTop: '1rem' }}>Amenities</h4>
+            <div className="as-amenity-grid">
+              {AMENITY_OPTS.map((a) => (
+                <button key={a} className={amenities.includes(a) ? 'on' : ''} onClick={() => toggleAmenity(a)}>{a}</button>
+              ))}
+            </div>
           </div>
         </div>
 

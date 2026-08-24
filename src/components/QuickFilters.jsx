@@ -1,27 +1,27 @@
-import { useState } from 'react';
-
-const QUICK = [
-  { id: 'pets', label: '🐾 Pets', dropdown: true },
-  { id: 'nocomm', label: '🚫 No commission', dropdown: false },
-  { id: 'term', label: '⏳ Term', dropdown: true },
-  { id: 'repair', label: '🛠 Repair', dropdown: true },
-];
+import { useFilters } from '../FiltersContext.jsx';
 
 export default function QuickFilters({ onAllFilters }) {
-  const [active, setActive] = useState({ pets: true, nocomm: false, term: false, repair: false });
+  const { pets, setPets, noCommission, setNoCommission, term, setTerm, repair, setRepair } = useFilters();
+
+  const items = [
+    { id: 'pets', label: '🐾 Pets', active: pets, toggle: () => setPets(!pets) },
+    { id: 'nocomm', label: '🚫 No commission', active: noCommission, toggle: () => setNoCommission(!noCommission) },
+    { id: 'term', label: '⏳ Term', active: term !== 'Any', toggle: () => setTerm(term === 'Any' ? '1yr+' : 'Any') },
+    { id: 'repair', label: '🛠 Repair', active: repair, toggle: () => setRepair(!repair) },
+  ];
 
   return (
     <div className="as-ribbon">
-      {QUICK.map((q) => (
+      {items.map((q) => (
         <button
           key={q.id}
-          className={`as-pill ${active[q.id] ? 'active' : ''}`}
-          onClick={() => setActive((a) => ({ ...a, [q.id]: !a[q.id] }))}
+          className={`as-pill ${q.active ? 'active' : ''}`}
+          onClick={q.toggle}
         >
-          {q.label}{q.dropdown && <span style={{ fontSize: '0.7rem', opacity: 0.7 }}>▾</span>}
+          {q.label}
         </button>
       ))}
-      <button className="as-pill all" onClick={onAllFilters}>🎛 All filters (3)</button>
+      <button className="as-pill all" onClick={onAllFilters}>🎛 All filters</button>
     </div>
   );
 }
