@@ -25,8 +25,8 @@ export function FiltersProvider({ children, properties, cities }) {
 
   const convertPrice = useCallback(
     (priceVnd) => {
-      // Treat 0 and the 1,000,000 default as "no real price"
-      if (!priceVnd || priceVnd === 1000000) return 'Contact for price';
+      // Treat 0, placeholder 1M, and sub-1M (likely missing data) as "no real price"
+      if (!priceVnd || priceVnd <= 1000000) return 'Contact for price';
       const rate = VND_RATES[currency] ?? 1;
       const val = priceVnd * rate;
       if (currency === 'VND') return Math.round(val).toLocaleString('ru-RU') + ' VND';
