@@ -132,15 +132,15 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px,1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
             <div style={{ backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.75rem' }}>
               <div title="Refundable security deposit (typically 1 month rent)" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--as-text-muted)' }}>Deposit</div>
-              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.deposit ? convertPrice(property.deposit) : '[TEMPLATE] 1 mo'}</div>
+              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.deposit ? convertPrice(property.deposit) : 'Contact owner'}</div>
             </div>
             <div style={{ backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.75rem' }}>
               <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--as-text-muted)' }}>Utilities</div>
-              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.utilities || '[TEMPLATE] Excl.'}</div>
+              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.utilities || 'Contact owner'}</div>
             </div>
             <div style={{ backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.75rem' }}>
               <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--as-text-muted)' }}>Min term</div>
-              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.minTerm || '[TEMPLATE] 1 mo'}</div>
+              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.minTerm || 'Flexible'}</div>
             </div>
           </div>
 
@@ -156,7 +156,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.85rem', marginBottom: '1.5rem' }}>
             <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg,#D9A679,#C77B4E)', flexShrink: 0 }}></div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.host || '[TEMPLATE] Linh T.'} <span style={{ fontSize: '0.7rem', color: 'var(--as-accent)', fontWeight: 600 }}>✓ Verified owner</span></div>
+              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.host || 'Verified owner'} <span style={{ fontSize: '0.7rem', color: 'var(--as-accent)', fontWeight: 600 }}>✓ Verified owner</span></div>
               <div style={{ fontSize: '0.78rem', color: 'var(--as-text-muted)' }}>{property.hostStats || 'Responds within 2h · 28 stays hosted'}</div>
             </div>
           </div>

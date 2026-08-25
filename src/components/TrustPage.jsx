@@ -2,7 +2,7 @@ const POINTS = [
   ['✓ Verified owners', 'ID and phone checks. Look for the ✓ Verified badge on profiles and listings.'],
   ['⭐ Two-way reviews', 'Renters and owners rate each other after each stay — accountability on both sides.'],
   ['💬 On-platform messaging', 'Keep all communication inside Asia Stays so we can help if something goes wrong.'],
-  ['🛡️ Dispute resolution', '[TEMPLATE] Our team mediates conflicts with evidence from both parties.'],
+  ['🛡️ Dispute resolution', 'Our team mediates conflicts with evidence from both parties.'],
   ['🚫 Off-platform warning', 'Never pay or share documents outside Asia Stays. Scammers ask to move to phone/email early — report them.'],
 ];
 
@@ -28,7 +28,7 @@ export default function TrustPage() {
           ))}
         </div>
         <p style={{ color: 'var(--as-text-muted)', marginTop: '2rem', fontSize: '0.9rem' }}>
-          [TEMPLATE] Need help? <a href="/contacts" style={{ color: 'var(--as-accent)' }}>Contact support →</a>
+          Need help? <a href="/contacts" style={{ color: 'var(--as-accent)' }}>Contact support →</a>
         </p>
       </div>
     </div>

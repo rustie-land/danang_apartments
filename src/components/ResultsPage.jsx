@@ -43,8 +43,8 @@ export default function ResultsPage({
       saved.push({ ts: Date.now(), label: `${selectedCity && selectedCity !== 'All' ? selectedCity : 'All'} · ${visible.length} stays` });
       localStorage.setItem('as_saved_searches', JSON.stringify(saved.slice(-5)));
       setSavedSearches(saved.slice(-5));
-      alert('🔔 Search saved! [TEMPLATE] Notifications via Telegram/Email coming soon.');
-    } catch { alert('🔔 Search saved (template).'); }
+      alert('🔔 Search saved! We\'ll keep your filters for next visit.');
+    } catch { alert('🔔 Search saved.'); }
   };
 
   const visible = properties.filter(filterByPreferences);

@@ -1,11 +1,11 @@
 const FAQ = [
-  { q: 'How does payment work for long-term stays?', a: '[TEMPLATE] Rent is paid monthly to the owner. Asia Stays holds no deposit unless agreed. We recommend a written lease for stays over 6 months.' },
-  { q: 'Are utilities (electricity, water, internet) included?', a: '[TEMPLATE] Each listing shows whether utilities are included in the monthly price. Use the "Utilities included" filter to see only those.' },
+  { q: 'How does payment work for long-term stays?', a: 'Rent is paid monthly to the owner. Asia Stays holds no deposit unless agreed. We recommend a written lease for stays over 6 months.' },
+  { q: 'Are utilities (electricity, water, internet) included?', a: 'Each listing shows whether utilities are included in the monthly price. Use the "Utilities included" filter to see only those.' },
   { q: 'What is the minimum lease term?', a: 'Most listings start at 1 month. Use the Term filter (1+ mo / 6+ mo / 1 yr+) to match your plans.' },
   { q: 'Is the owner verified?', a: 'Verified owners pass ID and phone checks. Look for the ✓ Verified badge on the listing and host profile.' },
   { q: 'Can I bring pets?', a: 'Use the "Pets" quick filter. Each listing states its pet policy (cats / small dogs / large dogs).' },
   { q: 'How do I contact the owner?', a: 'Open a listing and tap "Contact owner". You can message directly — keep communication on-platform for safety.' },
-  { q: 'Can I cancel or shorten my lease?', a: '[TEMPLATE] Cancellation terms are set per listing. Always confirm the policy with the owner before moving in.' },
+  { q: 'Can I cancel or shorten my lease?', a: 'Cancellation terms are set per listing. Always confirm the policy with the owner before moving in.' },
 ];
 
 export default function FAQPage() {
@@ -29,7 +29,7 @@ export default function FAQPage() {
           ))}
         </div>
         <p style={{ color: 'var(--as-text-muted)', marginTop: '2rem', fontSize: '0.9rem' }}>
-          [TEMPLATE] Didn't find your answer? <a href="/contacts" style={{ color: 'var(--as-accent)' }}>Contact support →</a>
+          Didn't find your answer? <a href="/contacts" style={{ color: 'var(--as-accent)' }}>Contact support →</a>
         </p>
       </div>
     </div>

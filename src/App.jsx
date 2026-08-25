@@ -17,6 +17,18 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b
 function normalizeTitle(s = '') {
   return s.replace(/[*_#~`]/g, '').replace(/\s+/g, ' ').replace(/^[^A-Za-z0-9]+/, '').replace(/\s+$/, '').trim();
 }
+function cleanDesc(s = '') {
+  return s
+    .replace(/\*{2,}/g, '')        // strip ** bold markdown
+    .replace(/Avalaible/gi, 'Available')  // typo fix
+    .replace(/---+.*$/gm, '')      // strip trailing "--- ---" separator lines
+    .replace(/📌.*$/gm, '')         // strip "📌Group for more options" CTA lines
+    .replace(/💌.*$/gm, '')         // strip "💌 Contact ..." lines
+    .replace(/t\.me\/[^\s]+/g, '') // strip raw telegram links
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,])/g, '$1')
+    .trim();
+}
 function parseFromDescription(desc = '') {
   const out = { title: '', area: '', numeric_price: null, city: '' };
   if (!desc) return out;
@@ -72,7 +84,7 @@ function AppRoutes() {
             else if (roomsVal >= 3) bedsLabel = '3+ Beds';
 
             const title = item.title || parsed.title || `${bedsLabel} Apartment`;
-            const area = item.area || item.district || parsed.area || 'Da Nang';
+            const area = (item.area && item.area.length > 1 && item.area !== 'L' ? item.area : null) || item.district || parsed.area || 'Da Nang';
 
             return {
               id: item.id || item.original_url || `apt-${index}`,
@@ -90,15 +102,15 @@ function AppRoutes() {
                 Array.isArray(item.image_urls) && item.image_urls.length > 0
                   ? item.image_urls[0]
                   : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',
-              description: item.description || 'No description provided.',
-              desc: item.description_en || item.description || 'No description provided.',
+            description: cleanDesc(item.description || 'No description provided.'),
+            desc: cleanDesc(item.description_en || item.description || 'No description provided.'),
               contact: item.contact || 'N/A',
               area,
-              city: item.city || parsed.city || 'Da Nang',
+              city: (item.city && item.city.length > 1 && item.city !== 'L' ? item.city : null) || parsed.city || 'Da Nang',
               currency: item.currency || 'VND',
               originalUrl: item.original_url || '',
-              location: item.address || area,
-              address: item.address || area,
+              location: (item.address && item.address.length > 1 && item.address !== 'L' ? item.address : null) || area,
+              address: (item.address && item.address.length > 1 && item.address !== 'L' ? item.address : null) || area,
             };
           });
           setProperties(formatted);

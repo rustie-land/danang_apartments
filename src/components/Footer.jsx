@@ -23,8 +23,8 @@ export default function Footer() {
         <div>
           <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#a89e8e', marginBottom: '0.75rem' }}>Contact</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#EDE8DF' }}>
-            <span>[TEMPLATE] ✉ hello@asiastays.com</span>
-            <span>[TEMPLATE] 💬 @asiastays</span>
+            <span>✉ savvin.rg@gmail.com</span>
+            <span>💬 @MrBin_arenda</span>
             <Link to="/contacts" style={{ color: '#EDE8DF' }}>Contact form →</Link>
             <span style={{ color: '#cfc7ba' }}>Da Nang · Pattaya · Phuket</span>
           </div>
@@ -36,7 +36,7 @@ export default function Footer() {
             <span>Da Nang, VN</span>
             <span>Pattaya, TH</span>
             <span>Phuket, TH</span>
-            <span>[TEMPLATE] + more</span>
+            <span>Hai Phong, VN</span>
           </div>
         </div>
       </div>
@@ -44,7 +44,7 @@ export default function Footer() {
       {/* Trust block */}
       <div style={{ maxWidth: '1280px', margin: '2rem auto 0', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.12)', fontSize: '0.8rem', color: '#cfc7ba', display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between' }}>
         <span>🛡️ Keep communication on-platform. Never pay or share documents outside Asia Stays.</span>
-        <span>© 2026 Asia Stays · [TEMPLATE] Privacy · Terms</span>
+        <span>© 2026 Asia Stays · Da Nang · Pattaya · Phuket</span>
       </div>
     </footer>
   );
