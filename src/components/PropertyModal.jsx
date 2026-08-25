@@ -90,6 +90,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
     .replace(/_{2,}/g, '')
     .replace(/#{1,6}\s?/g, '')
     .replace(/-{3,}/g, ' ')               // strip dash separators anywhere
+    .replace(/[—–‐-]{2,}/g, ' ')          // strip em-dash / en-dash runs
     .replace(/Avalaible/gi, 'Available')
     .replace(/Channel for more options.*$/gis, '')  // strip CTA block
     .replace(/📌.*$/gm, '')
@@ -100,6 +101,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
     .replace(/\s*,\s*/g, ', ')             // normalize commas
     .replace(/\s+/g, ' ')
     .replace(/\s+([.,])/g, '$1')
+    .replace(/Fully furnished(?=.*Fully furnished)/gi, '')  // dedupe repeated amenity
     .trim();
 
   useEffect(() => {
