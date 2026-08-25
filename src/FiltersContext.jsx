@@ -25,8 +25,10 @@ export function FiltersProvider({ children, properties, cities }) {
 
   const convertPrice = useCallback(
     (priceVnd) => {
+      // Treat 0 and the 1,000,000 default as "no real price"
+      if (!priceVnd || priceVnd === 1000000) return 'Contact for price';
       const rate = VND_RATES[currency] ?? 1;
-      const val = (priceVnd || 0) * rate;
+      const val = priceVnd * rate;
       if (currency === 'VND') return Math.round(val).toLocaleString('ru-RU') + ' VND';
       return CURRENCY_SYMBOL[currency] + val.toLocaleString('en-US', { maximumFractionDigits: 0 });
     },

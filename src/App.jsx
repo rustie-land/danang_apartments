@@ -14,23 +14,27 @@ const DEFAULT_ZOOM = 13;
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80';
 
 // Extract structured fields from free-text description when DB columns are empty.
+function normalizeTitle(s = '') {
+  return s.replace(/[*_#~`]/g, '').replace(/\s+/g, ' ').replace(/^[^A-Za-z0-9]+/, '').replace(/\s+$/, '').trim();
+}
 function parseFromDescription(desc = '') {
   const out = { title: '', area: '', numeric_price: null, city: '' };
   if (!desc) return out;
   const lines = desc.split('\n').map((l) => l.trim()).filter(Boolean);
-  if (lines[0]) out.title = lines[0].replace(/[*_#~`]/g, '').replace(/^[^A-Za-z0-9]+/, '').trim();
+  if (lines[0]) out.title = normalizeTitle(lines[0]);
+  // Price: handle "Rental price: 19,000,000 VND", "💰**Price: 16.5 million**", "💰**Price: X VND**"
   const priceMatch = desc.match(/Rental price:\s*(\d[\d,\.]*)\s*(VND|USD|THB)/i)
-    || desc.match(/Price:\s*([\d.]+)\s*million/i)
+    || desc.match(/Price:\s*\*{0,2}\s*([\d.]+)\s*(million|M)?\s*\*{0,2}/i)
     || desc.match(/(\d[\d,\.]*)\s*(VND|USD|THB)/i);
   if (priceMatch) {
     let raw = priceMatch[1].replace(/[,\.]/g, '');
-    if (/million/i.test(priceMatch[0])) raw = String(Number(raw) * 1000000);
+    if (/million/i.test(priceMatch[0]) || /M\b/i.test(priceMatch[0])) raw = String(Number(raw) * 1000000);
     out.numeric_price = Number(raw);
   }
   const locMatch = desc.match(/📍\s*([^|\n]+?)(?:\s*\|\s*([^|\n]+))?/);
   if (locMatch) {
-    out.area = (locMatch[2] || locMatch[1]).trim();
-    out.city = (locMatch[1] || '').trim();
+    out.area = normalizeTitle(locMatch[2] || locMatch[1]);
+    out.city = normalizeTitle(locMatch[1]);
   }
   return out;
 }
