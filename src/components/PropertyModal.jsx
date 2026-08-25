@@ -83,6 +83,22 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
   const T = tProp || t;
   const closeButtonRef = useRef(null);
 
+  // Local sanitization guard: ensure description is always cleaned even if upstream missed it.
+  const rawDesc = property.desc || property.description || 'No description provided.';
+  const desc = rawDesc
+    .replace(/\*{2,}/g, '')
+    .replace(/_{2,}/g, '')
+    .replace(/#{1,6}\s?/g, '')
+    .replace(/Avalaible/gi, 'Available')
+    .replace(/---+.*$/gm, '')
+    .replace(/📌.*$/gm, '')
+    .replace(/💌.*$/gm, '')
+    .replace(/🔝.*$/gm, '')
+    .replace(/t\.me\/[^\s]+/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,])/g, '$1')
+    .trim();
+
   useEffect(() => {
     closeButtonRef.current?.focus();
     const handleKeyDown = (e) => {
@@ -126,7 +142,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
           </h2>
           <div style={{ fontSize: '0.85rem', color: 'var(--color-muted)', marginBottom: '1rem' }}>📍 {property.address}</div>
 
-          <p style={{ color: 'var(--as-text)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>{property.desc || 'No description provided.'}</p>
+          <p style={{ color: 'var(--as-text)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>{desc || 'No description provided.'}</p>
 
           {/* Key terms (long-term) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px,1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
