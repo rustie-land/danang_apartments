@@ -89,11 +89,13 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
     .replace(/\*{2,}/g, '')
     .replace(/_{2,}/g, '')
     .replace(/#{1,6}\s?/g, '')
+    .replace(/-{3,}.*$/gm, '')        // strip "------" separator lines
     .replace(/Avalaible/gi, 'Available')
     .replace(/---+.*$/gm, '')
     .replace(/📌.*$/gm, '')
     .replace(/💌.*$/gm, '')
     .replace(/🔝.*$/gm, '')
+    .replace(/💯|🧹|🛍️|😴|🧺|💵|📅|📣|🔗|📱|🛏️|🪠|🧼|🚿/g, '')  // strip system emojis
     .replace(/t\.me\/[^\s]+/g, '')
     .replace(/\s+/g, ' ')
     .replace(/\s+([.,])/g, '$1')
@@ -135,12 +137,12 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
 
         <div style={{ padding: '1.75rem 1.75rem 2rem' }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '0.05em' }}>
-            {property.area ? property.area.toUpperCase() : 'ASIA'}
+            {property.area && property.area !== 'L' ? property.area.toUpperCase() : 'DA NANG'}
           </div>
           <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--color-deep)', margin: '0.25rem 0 0.5rem 0' }}>
             {property.title}
           </h2>
-          <div style={{ fontSize: '0.85rem', color: 'var(--color-muted)', marginBottom: '1rem' }}>📍 {property.address}</div>
+          <div style={{ fontSize: '0.85rem', color: 'var(--color-muted)', marginBottom: '1rem' }}>📍 {property.address && property.address !== 'L' ? property.address : (property.area && property.area !== 'L' ? property.area : 'Da Nang')}</div>
 
           <p style={{ color: 'var(--as-text)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>{desc || 'No description provided.'}</p>
 
