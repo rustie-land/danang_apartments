@@ -65,7 +65,7 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
             {property.title}
           </h3>
           <div style={{ fontSize: '0.7rem', color: 'var(--as-text-muted)', lineHeight: 1.4 }}>
-            {property.beds ? `${property.beds} bed · ` : ''}{property.type || 'Apartment'} · {property.area || 'Asia'}
+            {property.beds ? `${property.beds} · ` : ''}{property.type || 'Apartment'} · {property.area || 'Asia'}
             {property.feature ? ` · ${property.feature}` : ''}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--as-text-muted)' }}>📍 {property.address}</div>
@@ -94,7 +94,7 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
                 cursor: 'pointer'
               }}
             >
-              На карте
+              On map
             </button>
           </div>
         </div>

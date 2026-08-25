@@ -9,11 +9,11 @@ const DEFAULT_CENTER = [16.06, 108.23];
 function parseFromDescription(desc = '') {
   const out = { title: '', area: '', numeric_price: null, city: '' };
   if (!desc) return out;
-  // Title: first non-empty line, strip leading emoji/decor
+  // Title: first non-empty line, strip leading emoji/decor + markdown
   const lines = desc.split('\n').map((l) => l.trim()).filter(Boolean);
-  if (lines[0]) out.title = lines[0].replace(/^[^A-Za-z0-9]+/, '').trim();
-  // Price: "Rental price: 19,000,000 VND"
-  const priceMatch = desc.match(/Rental price:\s*([\d,\.]+)\s*(VND|USD|THB)?/i);
+  if (lines[0]) out.title = lines[0].replace(/[*_#~`]/g, '').replace(/^[^A-Za-z0-9]+/, '').trim();
+  // Price: "19,000,000 VND/month" or "💰 Rental price: 19,000,000 VND"
+  const priceMatch = desc.match(/(\d[\d,\.]*)\s*(VND|USD|THB)/i);
   if (priceMatch) out.numeric_price = Number(priceMatch[1].replace(/[,\.]/g, ''));
   // Area: "📍 Mỹ Đa Tây 12 Street | Khuê Mỹ"
   const locMatch = desc.match(/📍\s*([^|\n]+?)(?:\s*\|\s*([^|\n]+))?/);
