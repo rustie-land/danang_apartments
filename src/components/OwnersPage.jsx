@@ -16,7 +16,7 @@ export default function OwnersPage() {
 
         <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
           {[
-            ['1. Post in minutes', '[TEMPLATE] Add photos, price per month, deposit and utilities. Verified owners get a ✓ badge.'],
+            ['1. Post in minutes', 'Add photos, price per month, deposit and utilities. Verified owners get a ✓ badge.'],
             ['2. Get matched', 'Tenants filter by city, term and amenities. Your listing appears to the right renters.'],
             ['3. Communicate directly', 'Chat with prospective tenants on-platform. No commission, ever.'],
           ].map(([t, d]) => (
@@ -28,7 +28,7 @@ export default function OwnersPage() {
         </div>
 
         <button style={{ backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', padding: '0.85rem 1.75rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 700, fontSize: '1rem', cursor: 'pointer' }}>
-          [TEMPLATE] Become a host
+          Become a host
         </button>
         <p style={{ color: 'var(--as-text-muted)', marginTop: '1rem', fontSize: '0.85rem' }}>
           Questions? <Link to="/contacts" style={{ color: 'var(--as-accent)' }}>Contact us →</Link>

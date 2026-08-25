@@ -20,7 +20,7 @@ export default function LandingPage() {
       <SearchCapsule onSearch={goResults} />
       <QuickFilters onAllFilters={goResults} />
       <div style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--as-text-muted)', paddingBottom: '0.5rem' }}>
-        {totalFilteredCount} {t('apartmentsAvailable') || 'apartments available'} {selectedCity && selectedCity !== 'All' ? `in ${selectedCity}` : 'across Asia'}
+        {totalFilteredCount} apartments available {selectedCity && selectedCity !== 'All' ? `in ${selectedCity}` : 'across Asia'}
       </div>
 
       <section className="hero-grid">
@@ -47,6 +47,7 @@ export default function LandingPage() {
 
         <div style={{ position: 'relative' }}>
           <div style={{ width: '100%', height: '420px', borderRadius: 'var(--as-radius-card)', overflow: 'hidden', position: 'relative', background: 'linear-gradient(135deg, #E8DCC8 0%, #D9A679 55%, #B5623A 100%)', display: 'flex', alignItems: 'flex-end', padding: '1.5rem' }}>
+            <img src="https://images.unsplash.com/photo-1583416750470-965b2707b355?auto=format&fit=crop&w=900&q=80" alt="Long-term rental apartment in Da Nang" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" />
             <div style={{ position: 'absolute', bottom: '1.5rem', left: '1.5rem', right: '1.5rem', backgroundColor: 'rgba(26,26,26,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', padding: '1.25rem', borderRadius: 'var(--as-radius-card)', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.25rem', fontWeight: 600 }}>{t('brand')}</div>

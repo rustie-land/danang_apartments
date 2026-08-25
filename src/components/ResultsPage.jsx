@@ -116,7 +116,9 @@ export default function ResultsPage({
         <div className={`results-list-pane${mobileView === 'map' ? ' mobile-only-hidden' : ''}`}>
           <div style={{ marginBottom: '1rem' }}>
             <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.8rem', color: 'var(--color-deep)', margin: '0 0 0.25rem 0' }}>{t('results')}</h2>
-            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-muted)' }}>{t('noResults')}</p>
+            {sorted.length === 0 && (
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-muted)' }}>{t('noResults')}</p>
+            )}
           </div>
 
           {sorted.length === 0 ? (

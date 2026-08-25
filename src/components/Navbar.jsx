@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useFilters } from '../FiltersContext.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { BEDROOM_OPTIONS, AMENITY_OPTIONS } from '../i18n.js';
@@ -119,6 +119,7 @@ export default function Navbar() {
   const { currency, setCurrency } = useFilters();
   const [popover, setPopover] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
 
   return (
     <header
@@ -140,11 +141,11 @@ export default function Navbar() {
         </Link>
 
         <div className="nav-links" style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
-          <Link to="/about" style={{ color: 'var(--as-text)', textDecoration: 'none' }}>About</Link>
-          <Link to="/owners" style={{ color: 'var(--as-text)', textDecoration: 'none' }}>Owners</Link>
-          <Link to="/trust" style={{ color: 'var(--as-text)', textDecoration: 'none' }}>Trust</Link>
-          <Link to="/faq" style={{ color: 'var(--as-text)', textDecoration: 'none' }}>FAQ</Link>
-          <Link to="/contacts" style={{ color: 'var(--as-accent)', textDecoration: 'none' }}>Contacts</Link>
+          <Link to="/about" style={{ color: location.pathname === '/about' ? 'var(--as-accent)' : 'var(--as-text)', textDecoration: 'none' }}>About</Link>
+          <Link to="/owners" style={{ color: location.pathname === '/owners' ? 'var(--as-accent)' : 'var(--as-text)', textDecoration: 'none' }}>Owners</Link>
+          <Link to="/trust" style={{ color: location.pathname === '/trust' ? 'var(--as-accent)' : 'var(--as-text)', textDecoration: 'none' }}>Trust</Link>
+          <Link to="/faq" style={{ color: location.pathname === '/faq' ? 'var(--as-accent)' : 'var(--as-text)', textDecoration: 'none' }}>FAQ</Link>
+          <Link to="/contacts" style={{ color: location.pathname === '/contacts' ? 'var(--as-accent)' : 'var(--as-text)', textDecoration: 'none' }}>Contacts</Link>
         </div>
 
         <div className="nav-tools" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
@@ -159,7 +160,8 @@ export default function Navbar() {
 
           <div className="navbar-tools" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <button onClick={() => setPopover((p) => !p)} style={{ border: '1px solid var(--as-border)', borderRadius: '0.4rem', padding: '0.4rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', backgroundColor: '#fff', color: 'var(--as-text)' }}>{t('allFilters')}</button>
-            <button onClick={toggle} style={{ border: '1px solid var(--as-border)', borderRadius: '0.4rem', padding: '0.4rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', backgroundColor: 'transparent', color: 'var(--as-text)' }}>{lang === 'en' ? 'RU' : 'EN'}</button>
+            {/* Language toggle hidden until full RU localization is ready — mixed EN/RU content breaks trust */}
+            <button onClick={toggle} style={{ display: 'none', border: '1px solid var(--as-border)', borderRadius: '0.4rem', padding: '0.4rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', backgroundColor: 'transparent', color: 'var(--as-text)' }}>{lang === 'en' ? 'RU' : 'EN'}</button>
           </div>
         </div>
 

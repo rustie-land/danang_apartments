@@ -5,9 +5,29 @@ const FALLBACK_IMAGE =
 
 const DEFAULT_CENTER = [16.06, 108.23];
 
+// Extract structured fields from free-text description when DB columns are empty.
+function parseFromDescription(desc = '') {
+  const out = { title: '', area: '', numeric_price: null, city: '' };
+  if (!desc) return out;
+  // Title: first non-empty line, strip leading emoji/decor
+  const lines = desc.split('\n').map((l) => l.trim()).filter(Boolean);
+  if (lines[0]) out.title = lines[0].replace(/^[^A-Za-z0-9]+/, '').trim();
+  // Price: "Rental price: 19,000,000 VND"
+  const priceMatch = desc.match(/Rental price:\s*([\d,\.]+)\s*(VND|USD|THB)?/i);
+  if (priceMatch) out.numeric_price = Number(priceMatch[1].replace(/[,\.]/g, ''));
+  // Area: "📍 Mỹ Đa Tây 12 Street | Khuê Mỹ"
+  const locMatch = desc.match(/📍\s*([^|\n]+?)(?:\s*\|\s*([^|\n]+))?/);
+  if (locMatch) {
+    out.area = (locMatch[2] || locMatch[1]).trim();
+    out.city = (locMatch[1] || '').trim();
+  }
+  return out;
+}
+
 function formatApartment(item, index) {
-  const numPrice = item.numeric_price || 0;
-  let bedsLabel = 'Studio';
+  const parsed = parseFromDescription(item.description || item.description_en || '');
+  const numPrice = item.numeric_price || parsed.numeric_price || 0;
+  let bedsLabel = item.beds || 'Studio';
   const roomsVal = Number(item.rooms);
   if (roomsVal === 1) bedsLabel = '1 Bed';
   else if (roomsVal === 2) bedsLabel = '2 Beds';
@@ -18,9 +38,12 @@ function formatApartment(item, index) {
       ? item.image_urls
       : [FALLBACK_IMAGE];
 
+  const title = item.title || parsed.title || `${bedsLabel} Apartment`;
+  const area = item.area || item.district || parsed.area || 'Da Nang';
+
   return {
     id: item.id || item.original_url || `apt-${index}`,
-    title: item.title || `${bedsLabel} Apartment in Asia`,
+    title,
     beds: bedsLabel,
     price: numPrice,
     amenities: Array.isArray(item.features) ? item.features : [],
@@ -31,12 +54,12 @@ function formatApartment(item, index) {
     description: item.description || 'No description provided.',
     desc: item.description_en || item.description || 'No description provided.',
     contact: item.contact || 'N/A',
-    area: item.area || item.district || item.address || 'Asia',
-    city: item.city || 'Other',
+    area,
+    city: item.city || parsed.city || 'Da Nang',
     currency: item.currency || 'VND',
     originalUrl: item.original_url || '',
-    location: item.address || item.district || 'Asia',
-    address: item.address || 'Asia',
+    location: item.address || area,
+    address: item.address || area,
   };
 }
 
