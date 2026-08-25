@@ -10,6 +10,7 @@ import ResultsPage from './components/ResultsPage.jsx';
 
 const DEFAULT_CENTER = [16.06, 108.23];
 const DEFAULT_ZOOM = 13;
+// v7-price-fix deployed
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80';
 
 // Extract structured fields from free-text description when DB columns are empty.
