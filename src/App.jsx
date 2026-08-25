@@ -10,6 +10,29 @@ import ResultsPage from './components/ResultsPage.jsx';
 
 const DEFAULT_CENTER = [16.06, 108.23];
 const DEFAULT_ZOOM = 13;
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80';
+
+// Extract structured fields from free-text description when DB columns are empty.
+function parseFromDescription(desc = '') {
+  const out = { title: '', area: '', numeric_price: null, city: '' };
+  if (!desc) return out;
+  const lines = desc.split('\n').map((l) => l.trim()).filter(Boolean);
+  if (lines[0]) out.title = lines[0].replace(/[*_#~`]/g, '').replace(/^[^A-Za-z0-9]+/, '').trim();
+  const priceMatch = desc.match(/Rental price:\s*(\d[\d,\.]*)\s*(VND|USD|THB)/i)
+    || desc.match(/Price:\s*([\d.]+)\s*million/i)
+    || desc.match(/(\d[\d,\.]*)\s*(VND|USD|THB)/i);
+  if (priceMatch) {
+    let raw = priceMatch[1].replace(/[,\.]/g, '');
+    if (/million/i.test(priceMatch[0])) raw = String(Number(raw) * 1000000);
+    out.numeric_price = Number(raw);
+  }
+  const locMatch = desc.match(/📍\s*([^|\n]+?)(?:\s*\|\s*([^|\n]+))?/);
+  if (locMatch) {
+    out.area = (locMatch[2] || locMatch[1]).trim();
+    out.city = (locMatch[1] || '').trim();
+  }
+  return out;
+}
 
 function AppRoutes() {
   const [properties, setProperties] = useState([]);
@@ -34,16 +57,21 @@ function AppRoutes() {
           console.error('Supabase error:', error);
         } else if (data) {
           const formatted = data.map((item, index) => {
-            const numPrice = item.numeric_price || 0;
-            let bedsLabel = 'Studio';
+            const desc = item.description || item.description_en || '';
+            const parsed = parseFromDescription(desc);
+            const numPrice = item.numeric_price || parsed.numeric_price || 0;
+            let bedsLabel = item.beds || 'Studio';
             const roomsVal = Number(item.rooms);
             if (roomsVal === 1) bedsLabel = '1 Bed';
             else if (roomsVal === 2) bedsLabel = '2 Beds';
             else if (roomsVal >= 3) bedsLabel = '3+ Beds';
 
+            const title = item.title || parsed.title || `${bedsLabel} Apartment`;
+            const area = item.area || item.district || parsed.area || 'Da Nang';
+
             return {
               id: item.id || item.original_url || `apt-${index}`,
-              title: item.title || `${bedsLabel} Apartment in Asia`,
+              title,
               beds: bedsLabel,
               price: numPrice,
               amenities: Array.isArray(item.features) ? item.features : [],
@@ -60,12 +88,12 @@ function AppRoutes() {
               description: item.description || 'No description provided.',
               desc: item.description_en || item.description || 'No description provided.',
               contact: item.contact || 'N/A',
-              area: item.area || item.district || item.address || 'Asia',
-              city: item.city || 'Other',
+              area,
+              city: item.city || parsed.city || 'Da Nang',
               currency: item.currency || 'VND',
               originalUrl: item.original_url || '',
-              location: item.address || item.district || 'Asia',
-              address: item.address || 'Asia',
+              location: item.address || area,
+              address: item.address || area,
             };
           });
           setProperties(formatted);
