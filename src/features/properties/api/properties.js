@@ -12,9 +12,15 @@ function parseFromDescription(desc = '') {
   // Title: first non-empty line, strip leading emoji/decor + markdown
   const lines = desc.split('\n').map((l) => l.trim()).filter(Boolean);
   if (lines[0]) out.title = lines[0].replace(/[*_#~`]/g, '').replace(/^[^A-Za-z0-9]+/, '').trim();
-  // Price: "19,000,000 VND/month" or "💰 Rental price: 19,000,000 VND"
-  const priceMatch = desc.match(/(\d[\d,\.]*)\s*(VND|USD|THB)/i);
-  if (priceMatch) out.numeric_price = Number(priceMatch[1].replace(/[,\.]/g, ''));
+  // Price: "💰 Rental price: 19,000,000 VND/month" — match the rental line specifically
+  const priceMatch = desc.match(/Rental price:\s*(\d[\d,\.]*)\s*(VND|USD|THB)/i)
+    || desc.match(/Price:\s*([\d.]+)\s*million/i)
+    || desc.match(/(\d[\d,\.]*)\s*(VND|USD|THB)/i);
+  if (priceMatch) {
+    let raw = priceMatch[1].replace(/[,\.]/g, '');
+    if (/million/i.test(priceMatch[0])) raw = String(Number(raw) * 1000000);
+    out.numeric_price = Number(raw);
+  }
   // Area: "📍 Mỹ Đa Tây 12 Street | Khuê Mỹ"
   const locMatch = desc.match(/📍\s*([^|\n]+?)(?:\s*\|\s*([^|\n]+))?/);
   if (locMatch) {
