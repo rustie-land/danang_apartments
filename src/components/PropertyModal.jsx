@@ -89,14 +89,15 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
     .replace(/\*{2,}/g, '')
     .replace(/_{2,}/g, '')
     .replace(/#{1,6}\s?/g, '')
-    .replace(/-{3,}.*$/gm, '')        // strip "------" separator lines
+    .replace(/-{3,}/g, ' ')               // strip dash separators anywhere
     .replace(/Avalaible/gi, 'Available')
-    .replace(/---+.*$/gm, '')
+    .replace(/Channel for more options.*$/gis, '')  // strip CTA block
     .replace(/📌.*$/gm, '')
     .replace(/💌.*$/gm, '')
     .replace(/🔝.*$/gm, '')
-    .replace(/💯|🧹|🛍️|😴|🧺|💵|📅|📣|🔗|📱|🛏️|🪠|🧼|🚿/g, '')  // strip system emojis
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{20E3}]/gu, '')  // strip all emojis
     .replace(/t\.me\/[^\s]+/g, '')
+    .replace(/\s*,\s*/g, ', ')             // normalize commas
     .replace(/\s+/g, ' ')
     .replace(/\s+([.,])/g, '$1')
     .trim();
