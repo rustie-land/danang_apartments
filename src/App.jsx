@@ -24,10 +24,27 @@ function cleanDesc(s = '') {
     .replace(/---+.*$/gm, '')      // strip trailing "--- ---" separator lines
     .replace(/📌.*$/gm, '')         // strip "📌Group for more options" CTA lines
     .replace(/💌.*$/gm, '')         // strip "💌 Contact ..." lines
+    .replace(/💵.*?(VND|USD|THB|₫).*$/gi, '')  // strip standalone price line from description
+    .replace(/Rental price:.*$/gim, '')        // strip "Rental price: X" lines
+    .replace(/Price:\s*[\d.,]+\s*(VND|USD|THB|million|M)?/gi, '') // strip inline "Price: X"
     .replace(/t\.me\/[^\s]+/g, '') // strip raw telegram links
     .replace(/\s+/g, ' ')
     .replace(/\s+([.,])/g, '$1')
     .trim();
+}
+// Normalize contact string into a t.me deep link (username) or wa.me link.
+function normalizeContact(raw = '') {
+  if (!raw || raw === 'N/A') return { tg: '', wa: '', label: 'Contact owner' };
+  const str = String(raw).trim();
+  // Telegram username (with or without @, may be followed by comma/space + other info)
+  const tgMatch = str.match(/@?([a-zA-Z0-9_]{4,32})/);
+  // WhatsApp phone (digits, +, spaces)
+  const waMatch = str.match(/(\+?[\d\s]{8,})/);
+  const tg = tgMatch ? tgMatch[1].replace(/^@/, '') : '';
+  const wa = waMatch ? waMatch[1].replace(/\s+/g, '') : '';
+  let label = 'Contact owner';
+  if (/Direct TG Message/i.test(str)) label = 'Message on Telegram';
+  return { tg, wa, label };
 }
 function parseFromDescription(desc = '') {
   const out = { title: '', area: '', numeric_price: null, city: '' };
@@ -105,11 +122,12 @@ function AppRoutes() {
                   : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',
             description: cleanDesc(item.description || 'No description provided.'),
             desc: cleanDesc(item.description_en || item.description || 'No description provided.'),
-              contact: item.contact || 'N/A',
+              contact: normalizeContact(item.contact || ''),
               area,
               city: (item.city && item.city.length > 1 && item.city !== 'L' ? item.city : null) || parsed.city || 'Da Nang',
               currency: item.currency || 'VND',
               originalUrl: item.original_url || '',
+              createdAt: item.created_at || null,
               location: (item.address && item.address.length > 1 && item.address !== 'L' ? item.address : null) || area,
               address: (item.address && item.address.length > 1 && item.address !== 'L' ? item.address : null) || area,
             };

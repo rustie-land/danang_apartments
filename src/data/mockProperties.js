@@ -59,5 +59,7 @@ export const AMENITY_OPTIONS = ['#pool', '#pet', '#balcony', '#beach', '#sea', '
 export const SORT_OPTIONS = [
   { value: 'default', label: 'По умолчанию' },
   { value: 'price-asc', label: 'Сначала дешевле' },
-  { value: 'price-desc', label: 'Сначала дороже' }
+  { value: 'price-desc', label: 'Сначала дороже' },
+  { value: 'date-desc', label: 'Сначала новые' },
+  { value: 'date-asc', label: 'Сначала старые' }
 ];

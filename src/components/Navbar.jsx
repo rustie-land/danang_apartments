@@ -71,6 +71,14 @@ function GlobalSearchBar() {
           }}
         >
           <div style={{ marginBottom: '0.9rem' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>{t('priceRange')}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              <input type="number" min="0" step="500000" inputMode="numeric" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} aria-label="min price" placeholder="From" style={{ padding: '0.55rem 0.7rem', borderRadius: '0.5rem', border: '1px solid var(--as-border)', backgroundColor: 'var(--as-surface)', fontSize: '0.85rem', color: 'var(--as-text)', fontWeight: 600 }} />
+              <input type="number" min="0" step="500000" inputMode="numeric" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} aria-label="max price" placeholder="To" style={{ padding: '0.55rem 0.7rem', borderRadius: '0.5rem', border: '1px solid var(--as-border)', backgroundColor: 'var(--as-surface)', fontSize: '0.85rem', color: 'var(--as-text)', fontWeight: 600 }} />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '0.9rem' }}>
             <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>{t('city')}</div>
             <input
               value={cityQuery}

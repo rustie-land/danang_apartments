@@ -192,12 +192,23 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
             <button
               onClick={() => {
                 const msg = encodeURIComponent(`Hi! I'm interested in "${property.title}" (${convertPrice(property.price)}/mo). Is it still available?`);
-                window.open(`https://t.me/ainavii?text=${msg}`, '_blank');
+                const tgUser = property.contact && property.contact.tg ? property.contact.tg : 'ainavii';
+                window.open(`https://t.me/${tgUser}?text=${msg}`, '_blank');
               }}
               style={{ backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
             >
-              {T('contact')}
+              {property.contact && property.contact.label ? property.contact.label : T('contact')}
             </button>
+            {property.contact && property.contact.wa && (
+              <a
+                href={`https://wa.me/${property.contact.wa}`}
+                target="_blank"
+                rel="noopener"
+                style={{ backgroundColor: '#25D366', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+              >
+                WhatsApp
+              </a>
+            )}
             <a href="mailto:savvin.rg@gmail.com?subject=Asia Stays inquiry" style={{ fontSize: '0.75rem', color: 'var(--as-text-muted)', textDecoration: 'underline', marginLeft: '0.5rem' }}>or email</a>
           </div>
         </div>
