@@ -110,7 +110,7 @@ function AppRoutes() {
               title,
               beds: bedsLabel,
               price: numPrice,
-              amenities: Array.isArray(item.features) ? item.features : [],
+              amenities: Array.isArray(item.features) ? item.features.map((f) => String(f).replace('#', '').trim()) : [],
               lat: Number(item.lat) || 16.06,
               lng: Number(item.lng) || 108.23,
               imageUrls:
