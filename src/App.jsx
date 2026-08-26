@@ -26,7 +26,8 @@ function cleanDesc(s = '') {
     .replace(/💌.*$/gm, '')         // strip "💌 Contact ..." lines
     .replace(/💵.*?(VND|USD|THB|₫).*$/gi, '')  // strip standalone price line from description
     .replace(/Rental price:.*$/gim, '')        // strip "Rental price: X" lines
-    .replace(/Price:\s*[\d.,]+\s*(VND|USD|THB|million|M)?/gi, '') // strip inline "Price: X"
+    .replace(/Price:\s*[\d.,]+\s*(VND|USD|THB|million|M)?\s*(?:\/|\s*(?:per|month|mo))?/gi, '') // strip inline "Price: X" (any suffix)
+    .replace(/\b\d[\d.,]*\s*(VND|USD|THB|₫|million|M)\b\s*(?:\/|\s*(?:month|mo|per))?/gi, '') // strip any residual price token
     .replace(/t\.me\/[^\s]+/g, '') // strip raw telegram links
     .replace(/\s+/g, ' ')
     .replace(/\s+([.,])/g, '$1')

@@ -94,6 +94,9 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
     .replace(/Avalaible/gi, 'Available')
     .replace(/Channel for more options.*$/gis, '')  // strip CTA block
     .replace(/💵.*?(VND|USD|THB).*$/gi, '')         // strip standalone price line from description (price shown in card/modal header)
+    .replace(/Rental price:.*$/gim, '')        // strip "Rental price: X" lines
+    .replace(/Price:\s*[\d.,]+\s*(VND|USD|THB|million|M)?\s*(?:\/|\s*(?:per|month|mo))?/gi, '') // strip inline "Price: X"
+    .replace(/\b\d[\d.,]*\s*(VND|USD|THB|₫|million|M)\b\s*(?:\/|\s*(?:month|mo|per))?/gi, '') // strip any residual price token
     .replace(/📌.*$/gm, '')
     .replace(/💌.*$/gm, '')
     .replace(/🔝.*$/gm, '')
@@ -197,7 +200,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
               }}
               style={{ backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
             >
-              {property.contact && property.contact.label ? property.contact.label : T('contact')}
+              {property.contact && property.contact.tg ? 'Telegram' : (property.contact && property.contact.label ? property.contact.label : T('contact'))}
             </button>
             {property.contact && property.contact.wa && (
               <a
