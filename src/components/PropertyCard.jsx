@@ -49,26 +49,28 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
           border: 'none',
           backgroundColor: 'rgba(255,255,255,0.9)',
           cursor: 'pointer',
-          fontSize: '0.9rem',
+          fontSize: '0.8rem',
           lineHeight: '28px'
         }}
       >
-        {isFavorite ? '❤️' : '🤍'}
+        {isFavorite ? '♥' : '♡'}
       </button>
 
       <div style={{ padding: '0.85rem 0.85rem 0.85rem 0', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
         <div>
           <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--as-accent)', letterSpacing: '0.05em' }}>
-            {property.area ? property.area.toUpperCase() : 'ASIA'}
+            {(property.area && property.area !== 'L' && property.area.length > 1) ? property.area.toUpperCase() : 'DA NANG'}
           </div>
           <h3 style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.15rem', color: 'var(--as-text)', margin: '0.2rem 0' }}>
             {property.title}
           </h3>
           <div style={{ fontSize: '0.7rem', color: 'var(--as-text-muted)', lineHeight: 1.4 }}>
-            {property.beds ? `${property.beds} · ` : ''}{property.type || 'Apartment'} · {property.area || 'Asia'}
+            {property.beds ? `${property.beds} · ` : ''}{property.type || 'Apartment'} · {(property.area && property.area !== 'L' && property.area.length > 1) ? property.area : 'Da Nang'}
             {property.feature ? ` · ${property.feature}` : ''}
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--as-text-muted)' }}>📍 {property.address}</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--as-text-muted)' }}>
+            {(property.address && property.address !== 'L' && property.address.length > 1) ? property.address : ((property.area && property.area !== 'L' && property.area.length > 1) ? property.area : 'Da Nang')}
+          </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>

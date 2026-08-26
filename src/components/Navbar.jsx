@@ -1,8 +1,117 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useFilters } from '../FiltersContext.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { BEDROOM_OPTIONS, AMENITY_OPTIONS } from '../i18n.js';
+
+function GlobalSearchBar() {
+  const { t } = useLang();
+  const navigate = useNavigate();
+  const { selectedCity, setSelectedCity, cities, minPrice, maxPrice, bedrooms, amenities, toggleAmenity } = useFilters();
+  const [open, setOpen] = useState(false);
+  const [cityQuery, setCityQuery] = useState('');
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const cityLabel = selectedCity === 'All' ? t('allCities') : selectedCity;
+  const compactLabel = `${cityLabel} · ${minPrice && minPrice !== '0' ? Number(minPrice).toLocaleString() : 'Any'}–${maxPrice && maxPrice !== '25000000' ? Number(maxPrice).toLocaleString() : 'Any'} · ${bedrooms !== 'Any' ? bedrooms : 'Any'}`;
+
+  const suggestions = cityQuery
+    ? cities.filter((c) => c.toLowerCase().includes(cityQuery.toLowerCase()) && c !== 'All').slice(0, 6)
+    : cities.filter((c) => c !== 'All').slice(0, 6);
+
+  const submit = () => {
+    setOpen(false);
+    navigate('/results');
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative', width: '100%' }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.5rem 0.9rem',
+          borderRadius: '9999px',
+          border: '1px solid var(--as-border)',
+          backgroundColor: '#fff',
+          cursor: 'pointer',
+          fontSize: '0.8rem',
+          fontWeight: 600,
+          color: 'var(--as-text)',
+          boxShadow: '0 1px 3px rgba(26,26,26,0.04)',
+        }}
+      >
+        <span style={{ color: 'var(--as-accent)' }}>⌕</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{compactLabel}</span>
+        <span style={{ marginLeft: 'auto', color: 'var(--as-text-muted)', fontSize: '0.7rem' }}>▼</span>
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '115%',
+            left: 0,
+            right: 0,
+            backgroundColor: '#fff',
+            borderRadius: '0.9rem',
+            boxShadow: 'var(--shadow-strong)',
+            padding: '1.1rem',
+            width: 'min(92vw, 420px)',
+            zIndex: 3000,
+          }}
+        >
+          <div style={{ marginBottom: '0.9rem' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>{t('city')}</div>
+            <input
+              value={cityQuery}
+              onChange={(e) => setCityQuery(e.target.value)}
+              placeholder={t('allCities')}
+              style={{ width: '100%', padding: '0.55rem 0.7rem', borderRadius: '0.5rem', border: '1px solid var(--as-border)', backgroundColor: 'var(--as-surface)', fontSize: '0.85rem', color: 'var(--as-text)', fontWeight: 600 }}
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.4rem' }}>
+              {suggestions.map((c) => (
+                <button key={c} onClick={() => { setSelectedCity(c); setCityQuery(''); }} style={{ padding: '0.3rem 0.7rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, border: '1px solid ' + (selectedCity === c ? 'var(--as-accent)' : 'var(--as-border)'), backgroundColor: selectedCity === c ? 'var(--as-accent)' : '#fff', color: selectedCity === c ? '#fff' : 'var(--as-text)', cursor: 'pointer' }}>{c}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '0.9rem' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>{t('bedrooms')}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+              {BEDROOM_OPTIONS.map((opt) => (
+                <button key={opt.value} onClick={() => setBedrooms(opt.value)} style={{ padding: '0.35rem 0.7rem', borderRadius: '0.4rem', fontSize: '0.78rem', fontWeight: 600, border: 'none', backgroundColor: bedrooms === opt.value ? 'var(--as-accent)' : 'var(--as-surface)', color: bedrooms === opt.value ? '#fff' : 'var(--as-text)', cursor: 'pointer' }}>{t(opt.key)}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '0.9rem' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>{t('amenities')}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+              {AMENITY_OPTIONS.map((a) => {
+                const sel = amenities.includes(a.tag);
+                return (
+                  <button key={a.tag} onClick={() => toggleAmenity(a.tag)} style={{ padding: '0.3rem 0.7rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, border: 'none', backgroundColor: sel ? 'var(--as-accent)' : 'var(--as-surface)', color: sel ? '#fff' : 'var(--as-text)', cursor: 'pointer' }}>{t(a.key)}</button>
+                );
+              })}
+            </div>
+          </div>
+
+          <button onClick={submit} style={{ width: '100%', backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', borderRadius: '0.6rem', padding: '0.65rem', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>{t('search') || 'Search'}</button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function FilterPopover({ onClose }) {
   const { t } = useLang();
@@ -75,41 +184,14 @@ function FilterPopover({ onClose }) {
                 onClick={() => toggleAmenity(a.tag)}
                 style={{ padding: '0.3rem 0.7rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, border: 'none', backgroundColor: sel ? 'var(--as-accent)' : 'var(--as-surface)', color: sel ? '#fff' : 'var(--as-text)', cursor: 'pointer' }}
               >
-                {a.tag}
+                {t(a.key)}
               </button>
             );
           })}
         </div>
       </div>
-    </div>
-  );
-}
 
-function CityDropdown() {
-  const { t } = useLang();
-  const { selectedCity, setSelectedCity, cities } = useFilters();
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, []);
-
-  return (
-    <div ref={ref} style={{ position: 'relative' }}>
-      <button onClick={() => setOpen((o) => !o)} style={{ border: '1px solid var(--as-border)', borderRadius: '0.4rem', padding: '0.4rem 0.6rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', backgroundColor: 'var(--as-surface)', color: 'var(--as-text)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-        🌆 {selectedCity === 'All' ? t('allCities') : selectedCity} ▾
-      </button>
-      {open && (
-        <div style={{ position: 'absolute', top: '110%', left: 0, backgroundColor: '#fff', borderRadius: '0.5rem', boxShadow: 'var(--as-shadow-float)', padding: '0.4rem', minWidth: '160px', zIndex: 3000 }}>
-          {cities.map((c) => (
-            <button key={c} onClick={() => { setSelectedCity(c); setOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', border: 'none', background: selectedCity === c ? 'var(--as-surface)' : 'transparent', color: 'var(--as-text)', padding: '0.45rem 0.6rem', borderRadius: '0.35rem', fontSize: '0.8rem', fontWeight: selectedCity === c ? 700 : 400, cursor: 'pointer' }}>
-              {c === 'All' ? t('allCities') : c}
-            </button>
-          ))}
-        </div>
-      )}
+      <button onClick={onClose} style={{ marginTop: '1rem', width: '100%', backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', borderRadius: '0.5rem', padding: '0.6rem', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>{t('apply') || 'Apply'}</button>
     </div>
   );
 }
@@ -148,8 +230,11 @@ export default function Navbar() {
           <Link to="/contacts" style={{ color: location.pathname === '/contacts' ? 'var(--as-accent)' : 'var(--as-text)', textDecoration: 'none' }}>Contacts</Link>
         </div>
 
+        <div className="nav-search" style={{ display: 'flex', flex: '1 1 320px', maxWidth: '520px', minWidth: 0 }}>
+          <GlobalSearchBar />
+        </div>
+
         <div className="nav-tools" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', marginLeft: 'auto' }}>
-          <CityDropdown />
           <div style={{ display: 'flex', gap: '0.2rem', backgroundColor: 'var(--as-surface)', borderRadius: '0.5rem', padding: '0.2rem' }}>
             {['VND', 'USD', 'THB'].map((cur) => (
               <button key={cur} onClick={() => setCurrency(cur)} style={{ border: 'none', borderRadius: '0.35rem', padding: '0.35rem 0.55rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: currency === cur ? 'var(--as-accent)' : 'transparent', color: currency === cur ? '#fff' : 'var(--as-text)' }}>{cur}</button>

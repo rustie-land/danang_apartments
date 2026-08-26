@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient.js';
 import { LanguageProvider } from './LanguageContext.jsx';
 import { FiltersProvider } from './FiltersContext.jsx';
@@ -52,6 +52,7 @@ function parseFromDescription(desc = '') {
 }
 
 function AppRoutes() {
+  const location = useLocation();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mapBounds, setMapBounds] = useState(null);
@@ -76,7 +77,7 @@ function AppRoutes() {
           const formatted = data.map((item, index) => {
             const desc = item.description || item.description_en || '';
             const parsed = parseFromDescription(desc);
-            const numPrice = item.numeric_price || parsed.numeric_price || 0;
+            const numPrice = (item.numeric_price && item.numeric_price > 1000000) ? item.numeric_price : (parsed.numeric_price || 0);
             let bedsLabel = item.beds || 'Studio';
             const roomsVal = Number(item.rooms);
             if (roomsVal === 1) bedsLabel = '1 Bed';
@@ -148,7 +149,8 @@ function AppRoutes() {
   return (
     <FiltersProvider properties={properties} cities={cities}>
       <Navbar />
-      <Routes>
+      <div key={location.pathname} className="page-fade">
+        <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route
           path="/map"
@@ -190,6 +192,7 @@ function AppRoutes() {
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </div>
     </FiltersProvider>
   );
 }

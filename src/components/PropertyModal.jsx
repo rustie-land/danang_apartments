@@ -93,6 +93,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
     .replace(/[—–‐-]{2,}/g, ' ')          // strip em-dash / en-dash runs
     .replace(/Avalaible/gi, 'Available')
     .replace(/Channel for more options.*$/gis, '')  // strip CTA block
+    .replace(/💵.*?(VND|USD|THB).*$/gi, '')         // strip standalone price line from description (price shown in card/modal header)
     .replace(/📌.*$/gm, '')
     .replace(/💌.*$/gm, '')
     .replace(/🔝.*$/gm, '')
