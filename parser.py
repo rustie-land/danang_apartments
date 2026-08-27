@@ -80,8 +80,8 @@ def extract_rooms(text: str) -> int:
     if any(k in text for k in ['studio', 'студия', '0 br', '0 bed']): 
         return 0
     
-    # Ищем паттерны: 1BR, 2 beds, 1 спальня, 3 bedrooms
-    found = re.search(r'(\d+)\s*(bedroom|br|bed|спальн|spal)', text)
+    # Ищем паттерны: 1BR, 2 beds, 1 спальня, 3 bedrooms, 2-спальня (дефис тоже разделитель)
+    found = re.search(r'(\d+)\s*[-\s]*(bedroom|br|bed|спальн|spal)', text)
     if found:
         return int(found.group(1))
     
