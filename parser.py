@@ -428,6 +428,15 @@ async def main():
 
                 lat, lng = get_coords(text)
                 city = extract_city(text, getattr(channel, 'title', ''))
+
+                # Sanity guard: a realistic monthly rent in this market is well
+                # under 100M VND. Anything above is a misread (e.g. summing all
+                # fees). Skip such rows instead of polluting the DB.
+                if numeric_price_vnd > 100_000_000:
+                    print(f"  ⚠️ Skipped (price anomaly {numeric_price_vnd/1e6:.0f}M VND, likely misread): "
+                          f"{city} | {schema.property_type.value} | {schema.raw_address!r}")
+                    continue
+
                 # Перевод отключён по умолчанию (TRANSLATE=1 включает; падает на медленной сети)
                 desc_en = '' if (os.getenv('DRY_RUN') == '1' or os.getenv('TRANSLATE') != '1') else translate_text(text)
 

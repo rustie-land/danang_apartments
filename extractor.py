@@ -90,9 +90,20 @@ EXTRACTION:
      "40000 THB" -> 40000 THB; "$500" -> 500 USD; "15 triệu" -> 15000000 VND.
    - Currency: VND (₫/dong/triệu), THB (฿/baht/бат), USD ($/usd/долл). If
      absent, infer from context (Vietnam->VND, Thailand->THB) else UNKNOWN.
-   - Do NOT confuse rent price with deposit / commission / "management fee".
-     Take the monthly (or nightly) rent. If multiple prices (rent + sale), take
-     the rent price.
+   - TAKE THE MONTHLY RENT PRICE ONLY. Explicitly IGNORE: deposit ("cọc",
+     "đặt cọc", "deposit", "1 month"), commission ("hoa hồng", "commission"),
+     management/service fee ("management fee", "phí quản lý", "service"),
+     utilities ("electricity", "water", "wifi", "internet"), and per-person
+     or per-night prices.
+   - If the post shows SEVERAL rent prices (e.g. a range "19M to 21M" or
+     "from 5M, up to 20M"), take the MONTHLY RENT figure that the listing
+     headline states as THE price — usually the LARGER / headline number, not
+     a "from" teaser. Prefer the line labelled "Price:" / "Rent:" / "Rental
+     price:" over any small print. NEVER take a deposit or fee as the price.
+   - Sanity bound: a normal Da Nang/Pattaya monthly rent is 3,000,000–80,000,000
+     VND (or 300–2500 USD / 8000–60000 THB). If you compute something far
+     outside this (e.g. hundreds of millions), you misread the text — re-check
+     and pick the realistic monthly rent.
 4. LOCATION (raw_address): detailed string for a geocoder — city, district,
    street, landmark. E.g. "Da Nang, Son Tra district, Nguyen Dinh street".
    No floor/area/renovation.
