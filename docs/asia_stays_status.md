@@ -25,7 +25,15 @@
 - Запуск парсера — ТОЛЬКО в реальном терминале (интерактивный TG-логин).
 - `App.modular.jsx` удалён; `main.jsx` → `App.jsx` (single source of truth).
 - Сайт/дизайн-вывод → Telegram `-1004302165022` (Ai Automation), НЕ lessons-группа.
-- Ежедневно в 23:55 — **cron `b744cbb4fae6`** (скрипт `~/.hermes/scripts/trim_hermes_sessions.sh`):
+## Точка возобновления (пауза 2026-08-26)
+- ✅ П.1 (цены в БД) — сделано: `fix_prices.py` залил VND + THB/USD→VND-equiv.
+- ✅ П.2 (деплой) — не требовался по сути; поправлен `index.html` (Long-term + рабочий
+  canonical), пересобран + `vercel deploy --prod --force` → Ready. Запушено в `main` (коммит `6f60444`).
+- ⏸ **СЛЕДУЮЩЕЕ (завтра):** тесты парсеров цен/комнат (`parser.py`) — из README TODO.
+  Потом: остатки — домен `asia-stays.vercel.app` (404), схема БД (`title` column 400),
+  Phuket-каналы в TG-папку.
+
+## Ежедневно в 23:55 — **cron `b744cbb4fae6`** (скрипт `~/.hermes/scripts/trim_hermes_sessions.sh`):
   `hermes sessions prune --older-than 7d --max-messages 200 --yes`. Комбинированная
   очистка (старые ИЛИ раздутые треды). Причина: сегодня бот упал из-за раздутого
   АКТИВНОГО DM-треда (~39 сообщений), а не из-за старых сессий — только возрастной
