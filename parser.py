@@ -8,7 +8,7 @@ import random
 import requests
 from datetime import datetime, timezone, timedelta
 from telethon import TelegramClient, functions
-from supabase import create_client
+from supabase import create_client, ClientOptions
 from dotenv import load_dotenv
 
 # Принудительно перезаписываем системные переменные окружения значениями из .env
@@ -53,7 +53,25 @@ if not SUPABASE_KEY:
 
 # Инициализация клиентов
 client = TelegramClient('danang_session', int(TG_API_ID), TG_API_HASH)
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Bump PostgREST timeout (default 15s is too low; Supabase resets on slow links)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY,
+                         options=ClientOptions(postgrest_client_timeout=60))
+
+
+def upsert_with_retry(payload: dict, attempts: int = 4):
+    """Upsert a row, retrying on transient network errors (reset/timeout)."""
+    import time
+    last = None
+    for i in range(attempts):
+        try:
+            return supabase.table("apartments").upsert(payload, on_conflict='original_url').execute()
+        except Exception as e:  # noqa: BLE001
+            last = e
+            wait = 2 ** i
+            print(f"    ⚠️ Upsert failed (attempt {i+1}/{attempts}): {e}; retry in {wait}s", flush=True)
+            time.sleep(wait)
+    print(f"    ❌ Upsert gave up after {attempts} attempts: {last}", flush=True)
+    return None
 
 FOLDER_NAME = "parsing aprt"
 MAX_AGE_DAYS = 7
@@ -410,8 +428,8 @@ async def main():
 
                 lat, lng = get_coords(text)
                 city = extract_city(text, getattr(channel, 'title', ''))
-                # Перевод можно отключить (SKIP_TRANSLATE=1) для скорости прогона
-                desc_en = '' if (os.getenv('DRY_RUN') == '1' or os.getenv('SKIP_TRANSLATE') == '1') else translate_text(text)
+                # Перевод отключён по умолчанию (TRANSLATE=1 включает; падает на медленной сети)
+                desc_en = '' if (os.getenv('DRY_RUN') == '1' or os.getenv('TRANSLATE') != '1') else translate_text(text)
 
                 # Загружаем максимум 5 фото на объявление
                 uploaded_images = []
@@ -458,8 +476,12 @@ async def main():
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
 
-                # Upsert в таблицу
-                supabase.table("apartments").upsert(payload, on_conflict='original_url').execute()
+                # Upsert в таблицу (с retry на сетевые сбои)
+                res = upsert_with_retry(payload)
+                if res is None:
+                    print(f"  ⚠️ Skipped (DB unavailable): {city} | {schema.property_type.value} | "
+                          f"{fmt_price(schema.price_amount)} {schema.price_currency.value}")
+                    continue
                 print(f"  ✅ [Added] City: {city} | {schema.property_type.value} | "
                       f"Price: {fmt_price(schema.price_amount)} {schema.price_currency.value} "
                       f"(~{numeric_price_vnd/1e6:.1f}M VND) | Rooms: {schema.rooms_count} | Photos: {len(uploaded_images)}")
