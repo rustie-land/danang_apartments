@@ -33,7 +33,7 @@ client = TelegramClient('danang_session', int(TG_API_ID), TG_API_HASH)
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 FOLDER_NAME = "parsing aprt"
-MAX_AGE_DAYS = 10
+MAX_AGE_DAYS = 7
 USD_TO_VND_M = 0.025  # Курс для конвертации $ в миллионы донгов ($1000 = 25M VND)
 # Примерные курсы (можно вынести в .env позже). 1 USD / 1 THB -> VND
 USD_TO_VND = 25000.0
@@ -132,17 +132,20 @@ def clean_price(text: str) -> tuple[float, str]:
             val = float(thb_match.group(1))
             if 3000 <= val <= 500000:
                 amount = val
-    # 3. Поиск в миллионах донгов (12m, 12.5 triệu, 12tr, 12 million)
+    # 3. Поиск в миллионах донгов (12m, 12.5 triệu, 12tr, 12 million, 28 mil)
+    # ВАЖНО: суффикс 'm' ловит 'month'/'meter' -> используем явные маркеры миллионов,
+    # 'm' как отдельная буква запрещена (только в составе million/mln/mil).
     elif currency == 'VND':
-        m_match = re.search(r'(\d+\.?\d*)\s*(million|mln|m|tr|triệu|trieu)', text_clean)
+        m_match = re.search(r'(\d+\.?\d*)\s*(million|mln|mil|triệu|trieu|tr)', text_clean)
         if m_match:
             val = float(m_match.group(1))
             amount = val if val < 100 else round(val / 1000, 2)
         else:
-            # 4. Полная запись донгов (12000000)
-            full_match = re.search(r'(\d{7,8})', text_clean)
-            if full_match:
-                amount = round(float(full_match.group(1)) / 1_000_000, 2)
+            # 4. Полная запись донгов (12000000). Берём МАКСИМАЛЬНОЕ 7-8-значное
+            # число в тексте — цена аренды обычно больше, чем fee/deposit (1.3M).
+            full_matches = re.findall(r'(\d{7,8})', text_clean)
+            if full_matches:
+                amount = round(max(int(m) for m in full_matches) / 1_000_000, 2)
 
     # Конвертация в VND (миллионы)
     if currency == 'USD':
@@ -155,12 +158,19 @@ def clean_price(text: str) -> tuple[float, str]:
     return vnd_m, currency
 
 def translate_text(text: str) -> str:
-    """Переводит описание на английский. Возвращает оригинал при ошибке."""
+    """Переводит описание на английский. Возвращает оригинал при ошибке/таймауте."""
     if not text or len(text) < 5:
         return text
     try:
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
         from deep_translator import GoogleTranslator
-        return GoogleTranslator(source='auto', target='en').translate(text)
+
+        def _do():
+            return GoogleTranslator(source='auto', target='en').translate(text)
+
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            future = ex.submit(_do)
+            return future.result(timeout=8)  # не вешаем парсер на сети
     except Exception as e:
         print(f"    ⚠️ Ошибка перевода: {e}")
         return text
@@ -314,16 +324,21 @@ async def main():
         return print(f"❌ Папка '{FOLDER_NAME}' не найдена в Telegram")
 
     now = datetime.now(timezone.utc)
-    
+    channel_filter = (os.getenv('CHANNEL') or '').strip().lower()
+    if channel_filter:
+        print(f"🔎 Фильтр канала: {channel_filter!r}")
+
     for peer in peers:
         try:
             channel = await client.get_entity(peer)
+            if channel_filter and channel_filter not in (channel.title or '').lower():
+                continue
             print(f"\n📡 Парсим канал: {channel.title}")
             
             media_groups = {}
             
             # Собираем сообщения за последние MAX_AGE_DAYS (берём больше, т.к. много мусора отсеется)
-            async for message in client.iter_messages(channel, limit=150):
+            async for message in client.iter_messages(channel, limit=100):
                 if message.date and (now - message.date > timedelta(days=MAX_AGE_DAYS)):
                     continue
                 if not message.text and not message.photo:
@@ -360,7 +375,8 @@ async def main():
 
                 lat, lng = get_coords(text)
                 city = extract_city(text, getattr(channel, 'title', ''))
-                desc_en = translate_text(text)
+                # Перевод можно отключить (SKIP_TRANSLATE=1) для скорости прогона
+                desc_en = '' if (os.getenv('DRY_RUN') == '1' or os.getenv('SKIP_TRANSLATE') == '1') else translate_text(text)
 
                 # Загружаем максимум 5 фото на объявление
                 uploaded_images = []
@@ -370,6 +386,12 @@ async def main():
                         uploaded_images.append(img_url)
 
                 if not uploaded_images:
+                    continue
+
+                # DRY_RUN: only inspect, never touch DB / storage
+                if os.getenv('DRY_RUN') == '1':
+                    print(f"  (DRY) price={price_val:g}M {currency} | rooms={extract_rooms(text)} | city={city}", flush=True)
+                    print(f"        FULL text={text!r}", flush=True)
                     continue
 
                 # Формируем payload в соответствии со структурой Supabase
@@ -398,5 +420,10 @@ async def main():
             print(f"  ⚠️ Ошибка при обработке канала: {e}")
 
 if __name__ == '__main__':
-    with client:
-        client.loop.run_until_complete(main())
+    import traceback
+    try:
+        with client:
+            client.loop.run_until_complete(main())
+    except Exception:
+        traceback.print_exc()
+        raise
