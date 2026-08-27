@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import json
 import time
 import asyncio
 import random
@@ -260,6 +261,40 @@ def get_coords(text: str) -> tuple[float, float]:
         round(base_lng + random.uniform(-0.002, 0.002), 6)
     )
 
+
+def geocode_address(raw_address: str | None, text: str = '') -> tuple[float, float] | None:
+    """Geocode a structured address to real coordinates via Photon (free OSM).
+
+    Returns (lat, lng) or None if not found / outside Vietnam (caller falls
+    back to get_coords for a coarse district-level pin).
+    """
+    import urllib.parse
+    import urllib.request
+
+    query = (raw_address or '').strip()
+    if not query:
+        return None
+    # Always anchor to Vietnam so Photon doesn't wander to same-named places abroad.
+    if 'vietnam' not in query.lower() and 'việt' not in query.lower():
+        query = f"{query}, Vietnam"
+    url = f"https://photon.komoot.io/api/?q={urllib.parse.quote(query)}&limit=1"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "AsiaStaysBot/1.0 (danang-apartments; savvin.rg@gmail.com)"})
+        data = json.loads(urllib.request.urlopen(req, timeout=20).read().decode())
+        if data.get('features'):
+            coords = data['features'][0]['geometry']['coordinates']
+            lat, lng = round(coords[1], 6), round(coords[0], 6)
+            # Sanity: must be inside the Da Nang region bbox, otherwise Photon
+            # matched a same-named street elsewhere in Vietnam (e.g. Hanoi).
+            # Reject and let the caller fall back to the district pin.
+            if not (15.8 <= lat <= 16.2 and 108.1 <= lng <= 108.35):
+                print(f"    ⚠️ Geocode out of Da Nang region, rejected: {query[:50]} -> ({lat},{lng})")
+                return None
+            return lat, lng
+    except Exception as e:
+        print(f"    ⚠️ Geocode failed ({e}): {query[:50]}")
+    return None
+
 # --- ЗАГРУЗКА ИЗОБРАЖЕНИЙ ---
 
 def upload_image_sync(file_path: str, file_name: str) -> bool:
@@ -426,7 +461,13 @@ async def main():
                 rate = TO_VND.get(schema.price_currency.value, 1.0)
                 numeric_price_vnd = int(schema.price_amount * rate)
 
-                lat, lng = get_coords(text)
+                # Geocode the structured address (real coords via Photon);
+                # fall back to coarse district-level pin if geocoding fails.
+                geo = geocode_address(schema.raw_address, text)
+                if geo:
+                    lat, lng = geo
+                else:
+                    lat, lng = get_coords(text)
                 city = extract_city(text, getattr(channel, 'title', ''))
 
                 # Sanity guard: a realistic monthly rent in this market is well
