@@ -49,6 +49,7 @@ venv/
 _backup_table.py
 _diag_env.py
 apartments_backup.json
+apartments_backup_full_*.json
 
 # Local read-only diagnostic helpers (not committed)
 _check_read.py
