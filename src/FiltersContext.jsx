@@ -14,6 +14,7 @@ export function FiltersProvider({ children, properties, cities }) {
   const [pets, setPets] = useState(false);
   const [noCommission, setNoCommission] = useState(false);
   const [repair, setRepair] = useState(false);
+  const [sortBy, setSortBy] = useState('default'); // default | price-asc | price-desc | date-desc | date-asc
 
   const toggleAmenity = useCallback((tag) => {
     setAmenities((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -89,6 +90,8 @@ export function FiltersProvider({ children, properties, cities }) {
     setNoCommission,
     repair,
     setRepair,
+    sortBy,
+    setSortBy,
     convertPrice,
     filterByPreferences,
   };

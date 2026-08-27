@@ -16,7 +16,6 @@ export default function ResultsPage({
   selectedPropertyId,
   mapCenterCoords,
   favorites,
-  sortBy,
   setSortBy,
   onSelectProperty,
   onToggleFavorite,
@@ -27,7 +26,7 @@ export default function ResultsPage({
   setMobileView,
 }) {
   const { t } = useLang();
-  const { properties, filterByPreferences, convertPrice } = useFilters();
+  const { properties, filterByPreferences, convertPrice, sortBy } = useFilters();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [savedSearches, setSavedSearches] = useState([]);

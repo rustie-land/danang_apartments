@@ -78,7 +78,6 @@ function AppRoutes() {
   const [mapCenterCoords, setMapCenterCoords] = useState(null);
   const [activeModalProperty, setActiveModalProperty] = useState(null);
   const [favorites, setFavorites] = useState([]);
-  const [sortBy, setSortBy] = useState('default');
   const [mobileView, setMobileView] = useState('list');
 
   useEffect(() => {
@@ -206,8 +205,6 @@ function AppRoutes() {
               selectedPropertyId={selectedPropertyId}
               mapCenterCoords={mapCenterCoords}
               favorites={favorites}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
               onSelectProperty={(prop) => {
                 setSelectedPropertyId(prop.id);
                 setMapCenterCoords([prop.lat, prop.lng]);
