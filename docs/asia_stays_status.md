@@ -52,8 +52,20 @@
 - НЕ СДЕЛАНО (отложено): домен `asia-stays.vercel.app` (404), схема БД `title` (400),
       автоматизация launchd (скрипты `weekly_refresh.sh`+plist готовы, НЕ установлены),
       Phuket/Pattaya каналы (убраны из TG-папки, вернёмся позже),
-      ОБНОВЛЕНИЕ ФРОНТЕНДА под новые поля (area_sqm/floor/property_type пока не
-      отображаются на сайте — БД их хранит, но App.jsx их не читает).
+      **BACKFILL старых 78 строк** (не прошли через LLM; перезапишутся при следующем
+      прогоне по original_url, либо отдельным скриптом).
+- 🔧 **ФРОНТЕНД ОБНОВЛЁН (2026-08-27):** исправлен поиск по цене + выведены новые поля.
+      - `FiltersContext.jsx`: `filterByPreferences` конвертирует min/max из выбранной
+        валюты в VND (раньше сравнивал сырой VND → всё отсекалось → кнопка блокировалась).
+      - `FilterForm.jsx`: убрана блокировка кнопки Find при 0 результатов; подпись
+        валюты у полей цены (min/max VND/USD/THB).
+      - `App.jsx`: маппинг `area_sqm`/`floor`/`total_floors`/`property_type`/`raw_address`/
+        `description_clean` из БД в объект; `desc` берёт `description_clean` (чище).
+      - `PropertyCard.jsx`: в строке характеристик тип / площадь m² / этаж.
+      - `PropertyModal.jsx`: блок характеристик (Type, Area, Floor/total), описание из
+        `descriptionClean`.
+      - Удалён мёртвый `useFilters.js` (дубликат FiltersContext).
+      - `npm run build` ✅, деплой ✅ (`danang-apartments.vercel.app`).
 
 ## Ежедневно в 23:55 — **cron `b744cbb4fae6`** (скрипт `~/.hermes/scripts/trim_hermes_sessions.sh`):
   `hermes sessions prune --older-than 7d --max-messages 200 --yes`. Комбинированная

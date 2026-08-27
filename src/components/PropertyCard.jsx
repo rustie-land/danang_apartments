@@ -65,7 +65,8 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
             {property.title}
           </h3>
           <div style={{ fontSize: '0.7rem', color: 'var(--as-text-muted)', lineHeight: 1.4 }}>
-            {property.beds ? `${property.beds} · ` : ''}{property.type || 'Apartment'} · {(property.area && property.area !== 'L' && property.area.length > 1) ? property.area : 'Da Nang'}
+            {property.beds ? `${property.beds} · ` : ''}{property.propertyType || 'Apartment'} · {(property.area && property.area !== 'L' && property.area.length > 1) ? property.area : 'Da Nang'}
+            {property.areaSqm ? ` · ${property.areaSqm} m²` : ''}{property.floor ? ` · fl. ${property.floor}` : ''}
             {property.feature ? ` · ${property.feature}` : ''}
           </div>
           <div style={{ fontSize: '0.75rem', color: 'var(--as-text-muted)' }}>

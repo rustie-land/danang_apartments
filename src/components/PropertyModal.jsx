@@ -151,7 +151,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
           </h2>
           <div style={{ fontSize: '0.85rem', color: 'var(--color-muted)', marginBottom: '1rem' }}>📍 {property.address && property.address !== 'L' ? property.address : (property.area && property.area !== 'L' ? property.area : 'Da Nang')}</div>
 
-          <p style={{ color: 'var(--as-text)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>{desc || 'No description provided.'}</p>
+          <p style={{ color: 'var(--as-text)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>{property.descriptionClean || 'No description provided.'}</p>
 
           {/* Key terms (long-term) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px,1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
@@ -167,7 +167,23 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
               <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--as-text-muted)' }}>Min term</div>
               <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.minTerm || 'Flexible'}</div>
             </div>
-          </div>
+            <div style={{ backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.75rem' }}>
+              <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--as-text-muted)' }}>Type</div>
+              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.propertyType || 'Apartment'}</div>
+            </div>
+            {property.areaSqm != null && (
+              <div style={{ backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.75rem' }}>
+                <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--as-text-muted)' }}>Area</div>
+                <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.areaSqm} m²</div>
+              </div>
+            )}
+            {property.floor != null && (
+              <div style={{ backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.75rem' }}>
+                <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--as-text-muted)' }}>Floor</div>
+                <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.floor}{property.totalFloors ? ` / ${property.totalFloors}` : ''}</div>
+              </div>
+            )}
+            </div>
 
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
             {property.amenities.map((a) => (

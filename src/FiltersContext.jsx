@@ -39,8 +39,17 @@ export function FiltersProvider({ children, properties, cities }) {
     (item) => {
       if (selectedCity !== 'All' && item.city !== selectedCity) return false;
       const matchBeds = bedrooms === 'Any' || item.beds === bedrooms;
-      const min = minPrice === '' ? -Infinity : Number(minPrice);
-      const max = maxPrice === '' ? Infinity : Number(maxPrice);
+      // Convert the user's min/max (entered in the selected currency) into VND
+      // for comparison against item.price (always VND).
+      const rate = VND_RATES[currency] ?? 1; // units of currency per 1 VND
+      const toVnd = (v) => {
+        if (v === '' || v == null) return null;
+        return Number(v) / rate; // e.g. 340 USD / (1/25000) = 8,500,000 VND
+      };
+      const minRaw = toVnd(minPrice);
+      const maxRaw = toVnd(maxPrice);
+      const min = minRaw == null ? -Infinity : minRaw;
+      const max = maxRaw == null ? Infinity : maxRaw;
       const matchPrice = item.price === 0 || (item.price >= min && item.price <= max);
       const matchAmenities =
         amenities.length === 0 ||
@@ -54,7 +63,7 @@ export function FiltersProvider({ children, properties, cities }) {
       const matchRepair = !repair || item.repair === true;
       return matchBeds && matchPrice && matchAmenities && matchTerm && matchPets && matchCommission && matchRepair;
     },
-    [selectedCity, bedrooms, minPrice, maxPrice, amenities, term, pets, noCommission, repair]
+    [selectedCity, bedrooms, minPrice, maxPrice, amenities, term, pets, noCommission, repair, currency]
   );
 
   const value = {

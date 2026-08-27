@@ -105,6 +105,13 @@ function AppRoutes() {
             const title = item.title || parsed.title || `${bedsLabel} Apartment`;
             const area = (item.area && item.area.length > 1 && item.area !== 'L' ? item.area : null) || item.district || parsed.area || 'Da Nang';
 
+            // Prefer structured columns from the LLM extractor; fall back to legacy parsing.
+            const descClean = item.description_clean || item.description_en || item.description || '';
+            const rawAddress = (item.raw_address && item.raw_address.length > 1) ? item.raw_address : null;
+            const propertyType = item.property_type
+              ? (item.property_type.charAt(0).toUpperCase() + item.property_type.slice(1))
+              : (item.beds ? 'Apartment' : 'Apartment');
+
             return {
               id: item.id || item.original_url || `apt-${index}`,
               title,
@@ -121,16 +128,23 @@ function AppRoutes() {
                 Array.isArray(item.image_urls) && item.image_urls.length > 0
                   ? item.image_urls[0]
                   : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',
-            description: cleanDesc(item.description || 'No description provided.'),
-            desc: cleanDesc(item.description_en || item.description || 'No description provided.'),
+              description: cleanDesc(item.description || descClean || 'No description provided.'),
+              desc: cleanDesc(descClean || 'No description provided.'),
               contact: normalizeContact(item.contact || ''),
               area,
               city: (item.city && item.city.length > 1 && item.city !== 'L' ? item.city : null) || parsed.city || 'Da Nang',
               currency: item.currency || 'VND',
               originalUrl: item.original_url || '',
               createdAt: item.created_at || null,
-              location: (item.address && item.address.length > 1 && item.address !== 'L' ? item.address : null) || area,
-              address: (item.address && item.address.length > 1 && item.address !== 'L' ? item.address : null) || area,
+              location: rawAddress || area,
+              address: rawAddress || area,
+              // NEW structured fields from LLM extraction
+              areaSqm: item.area_sqm != null ? Number(item.area_sqm) : null,
+              floor: item.floor != null ? Number(item.floor) : null,
+              totalFloors: item.total_floors != null ? Number(item.total_floors) : null,
+              propertyType,
+              rawAddress,
+              descriptionClean: descClean || 'No description provided.',
             };
           });
           setProperties(formatted);

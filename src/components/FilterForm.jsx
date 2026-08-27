@@ -4,7 +4,7 @@ import { BEDROOM_OPTIONS, AMENITY_OPTIONS } from '../i18n.js';
 
 export default function FilterForm({ totalFilteredCount, onNext }) {
   const { t } = useLang();
-  const { bedrooms, setBedrooms, minPrice, setMinPrice, maxPrice, setMaxPrice, amenities, toggleAmenity } = useFilters();
+  const { bedrooms, setBedrooms, minPrice, setMinPrice, maxPrice, setMaxPrice, amenities, toggleAmenity, currency } = useFilters();
   const priceRangeInvalid = minPrice !== '' && maxPrice !== '' && Number(minPrice) > Number(maxPrice);
 
   return (
@@ -41,26 +41,32 @@ export default function FilterForm({ totalFilteredCount, onNext }) {
           {t('priceRange')}
         </label>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-          <input
-            type="number"
-            min="0"
-            step="500000"
-            inputMode="numeric"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            aria-label="min"
-            style={{ padding: '0.6rem 0.8rem', borderRadius: '0.4rem', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-alt)', fontSize: '0.9rem', color: 'var(--color-deep)', fontWeight: 600 }}
-          />
-          <input
-            type="number"
-            min="0"
-            step="500000"
-            inputMode="numeric"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            aria-label="max"
-            style={{ padding: '0.6rem 0.8rem', borderRadius: '0.4rem', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-alt)', fontSize: '0.9rem', color: 'var(--color-deep)', fontWeight: 600 }}
-          />
+          <div>
+            <input
+              type="number"
+              min="0"
+              step="500000"
+              inputMode="numeric"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              aria-label="min"
+              style={{ padding: '0.6rem 0.8rem', borderRadius: '0.4rem', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-alt)', fontSize: '0.9rem', color: 'var(--color-deep)', fontWeight: 600, width: '100%' }}
+            />
+            <div style={{ fontSize: '0.7rem', color: 'var(--as-text-muted)', marginTop: '0.2rem' }}>min ({currency})</div>
+          </div>
+          <div>
+            <input
+              type="number"
+              min="0"
+              step="500000"
+              inputMode="numeric"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              aria-label="max"
+              style={{ padding: '0.6rem 0.8rem', borderRadius: '0.4rem', border: '1px solid var(--color-border-strong)', backgroundColor: 'var(--color-bg-alt)', fontSize: '0.9rem', color: 'var(--color-deep)', fontWeight: 600, width: '100%' }}
+            />
+            <div style={{ fontSize: '0.7rem', color: 'var(--as-text-muted)', marginTop: '0.2rem' }}>max ({currency})</div>
+          </div>
         </div>
         {priceRangeInvalid && (
           <div role="alert" style={{ marginTop: '0.4rem', fontSize: '0.8rem', color: '#b23b3b' }}>
@@ -101,17 +107,17 @@ export default function FilterForm({ totalFilteredCount, onNext }) {
 
       <button
         onClick={onNext}
-        disabled={priceRangeInvalid || totalFilteredCount === 0}
+        disabled={priceRangeInvalid}
         style={{
           width: '100%',
           padding: '0.9rem',
           borderRadius: '0.5rem',
-          backgroundColor: priceRangeInvalid || totalFilteredCount === 0 ? 'var(--as-text-muted)' : 'var(--as-accent)',
+          backgroundColor: priceRangeInvalid ? 'var(--as-text-muted)' : 'var(--as-accent)',
           color: '#fff',
           border: 'none',
           fontWeight: 700,
           fontSize: '0.95rem',
-          cursor: priceRangeInvalid || totalFilteredCount === 0 ? 'not-allowed' : 'pointer',
+          cursor: priceRangeInvalid ? 'not-allowed' : 'pointer',
           transition: 'background-color 0.2s'
         }}
       >
