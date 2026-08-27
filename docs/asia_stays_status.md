@@ -34,12 +34,26 @@
 ## Точка возобновления (пауза 2026-08-27)
 - ✅ Тесты парсера, чистка описаний, прайм-парсинг за неделю, prune старых — ВСЁ СДЕЛАНО.
       БД = 104 свежих (<7d) строки, запушено в `main` (до `49da622`).
-- 💡 **НОВЫЙ ХОТЕЛКА (на паузе):** Руслан хочет **поменять логику парсинга** — пока
-      обдумывает. Уточнить при возобновлении: что именно менять (фильтры is_rental_listing?
-      города? структуру payload? частоту? источники каналов?).
+- 💡 **СМЕНА ЛОГИКИ ПАРСИНГА — ВЫПОЛНЕНО (2026-08-27):** Руслан хотел заменить хрупкие
+      regex-экстракторы на структурированное LLM-извлечение. Реализовано:
+      - `extractor.py`: `PropertyListingSchema` (Pydantic) + `STABILIZED_PROMPT`
+        (адаптирован под Asia Stays: VND/THB/USD, Da Nang/Pattaya/Phuket) +
+        `extract_listing_llm` (OpenRouter `deepseek/deepseek-chat`, бесплатная,
+        ключ из `~/agent-swarm/.env`) + локальный regex-фоллбэк `extract_listing`.
+      - **Миграция БД** `migrations/001_add_listing_schema.sql` ПРИМЕНЕНА (через
+        Supabase SQL Editor): +9 колонок (is_rent, property_type, price_amount,
+        price_currency, raw_address, area_sqm, floor, total_floors, description_clean)
+        +3 индекса. Проверено: 24 колонки. `migrate.py` (pg8000) готов на будущее.
+      - **Интеграция в `parser.py`**: вызов `extract_listing_llm` → payload со всеми
+        полями; `numeric_price` = VND-эквивалент (rate VND:1, USD:25000, THB:700);
+        DRY_RUN показывает LLM-результат. `NO_LLM=1` — фоллбэк на regex.
+      - Dry-run подтвердил: цены/типы/адреса извлекаются корректно.
+      - Коммит: см. ниже (не запушено — ждём прогона из терминала).
 - НЕ СДЕЛАНО (отложено): домен `asia-stays.vercel.app` (404), схема БД `title` (400),
-      автоматизация launchd (скрипты `weekly_refresh.sh`+plist готовы, НЕ установлены —
-      ждём решения по логике парсинга, т.к. launchd должен крутить финальную логику).
+      автоматизация launchd (скрипты `weekly_refresh.sh`+plist готовы, НЕ установлены),
+      Phuket/Pattaya каналы (убраны из TG-папки, вернёмся позже),
+      ОБНОВЛЕНИЕ ФРОНТЕНДА под новые поля (area_sqm/floor/property_type пока не
+      отображаются на сайте — БД их хранит, но App.jsx их не читает).
 
 ## Ежедневно в 23:55 — **cron `b744cbb4fae6`** (скрипт `~/.hermes/scripts/trim_hermes_sessions.sh`):
   `hermes sessions prune --older-than 7d --max-messages 200 --yes`. Комбинированная

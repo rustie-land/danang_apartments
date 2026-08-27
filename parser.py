@@ -14,6 +14,29 @@ from dotenv import load_dotenv
 # Принудительно перезаписываем системные переменные окружения значениями из .env
 load_dotenv(override=True)
 
+# OpenRouter key lives in agent-swarm/.env (shared secrets) — load it WITHOUT
+# writing anything into this project's .env.
+try:
+    for _line in open(os.path.expanduser('~/agent-swarm/.env'), encoding='utf-8'):
+        _line = _line.strip()
+        if _line and not _line.startswith('#') and '=' in _line:
+            _k, _v = _line.split('=', 1)
+            os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+except FileNotFoundError:
+    pass
+
+# Local structured extractor (regex + LLM via OpenRouter)
+import extractor as listing_extractor
+
+
+def fmt_price(amount: float) -> str:
+    """Human-readable price: int for big numbers (avoids 2e+07 in output)."""
+    if amount is None:
+        return "0"
+    if amount >= 1_000_000:
+        return f"{int(amount):,}"
+    return f"{amount:g}"
+
 # Считываем и очищаем переменные от пробелов/переносов
 SUPABASE_URL = os.getenv('SUPABASE_URL', '').strip().rstrip('/')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', '').strip()
@@ -368,10 +391,22 @@ async def main():
                 if not is_rental_listing(text):
                     continue
                 
-                price_val, currency = clean_price(text)
-                # Пропускаем объявления с нулевой или аномально высокой ценой (>80M VND)
-                if price_val <= 0 or price_val > 80:
+                # --- Structured extraction via LLM (falls back to regex internally) ---
+                use_llm = os.getenv('NO_LLM') != '1'
+                if use_llm:
+                    schema = listing_extractor.extract_listing_llm(text)
+                else:
+                    schema = listing_extractor.extract_listing(text)
+
+                # Skip listings with no usable price
+                if schema.price_amount is None or schema.price_amount <= 0:
                     continue
+
+                # Convert native price -> VND-equivalent for the legacy numeric_price
+                # column the frontend expects (VND millions * 1e6).
+                TO_VND = {'VND': 1.0, 'USD': 25000.0, 'THB': 700.0, 'UNKNOWN': 1.0}
+                rate = TO_VND.get(schema.price_currency.value, 1.0)
+                numeric_price_vnd = int(schema.price_amount * rate)
 
                 lat, lng = get_coords(text)
                 city = extract_city(text, getattr(channel, 'title', ''))
@@ -390,23 +425,34 @@ async def main():
 
                 # DRY_RUN: only inspect, never touch DB / storage
                 if os.getenv('DRY_RUN') == '1':
-                    print(f"  (DRY) price={price_val:g}M {currency} | rooms={extract_rooms(text)} | city={city}", flush=True)
-                    print(f"        FULL text={text!r}", flush=True)
+                    print(f"  (DRY) is_rent={schema.is_rent} type={schema.property_type.value} "
+                          f"price={fmt_price(schema.price_amount)} {schema.price_currency.value} "
+                          f"rooms={schema.rooms_count} area={schema.area_sqm} "
+                          f"city={city} addr={schema.raw_address!r}", flush=True)
                     continue
 
                 # Формируем payload в соответствии со структурой Supabase
                 payload = {
                     "description": text,
                     "description_en": desc_en,
-                    "price_raw": f"{price_val:g}M VND",
-                    "currency": currency,
-                    "numeric_price": int(price_val * 1_000_000), # В донгах (например 12000000)
+                    "description_clean": schema.description_clean,
+                    "price_raw": f"{fmt_price(schema.price_amount)} {schema.price_currency.value}",
+                    "currency": schema.price_currency.value,
+                    "price_amount": schema.price_amount,
+                    "price_currency": schema.price_currency.value,
+                    "numeric_price": numeric_price_vnd,  # VND-equivalent, for frontend
+                    "is_rent": schema.is_rent,
+                    "property_type": schema.property_type.value,
+                    "raw_address": schema.raw_address,
+                    "rooms": schema.rooms_count,
+                    "area_sqm": schema.area_sqm,
+                    "floor": schema.floor,
+                    "total_floors": schema.total_floors,
                     "original_url": f"tg_{channel.id}_{data['id']}",
                     "lat": lat,
                     "lng": lng,
                     "city": city,
                     "image_urls": uploaded_images,
-                    "rooms": extract_rooms(text),
                     "contact": extract_contacts(text),
                     "features": extract_features(text),
                     "created_at": datetime.now(timezone.utc).isoformat()
@@ -414,7 +460,9 @@ async def main():
 
                 # Upsert в таблицу
                 supabase.table("apartments").upsert(payload, on_conflict='original_url').execute()
-                print(f"  ✅ [Added] City: {city} | Price: {price_val}M VND ({currency}) | Rooms: {payload['rooms']} | Photos: {len(uploaded_images)}")
+                print(f"  ✅ [Added] City: {city} | {schema.property_type.value} | "
+                      f"Price: {fmt_price(schema.price_amount)} {schema.price_currency.value} "
+                      f"(~{numeric_price_vnd/1e6:.1f}M VND) | Rooms: {schema.rooms_count} | Photos: {len(uploaded_images)}")
 
         except Exception as e:
             print(f"  ⚠️ Ошибка при обработке канала: {e}")
