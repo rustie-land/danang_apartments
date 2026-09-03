@@ -4,7 +4,7 @@ import L from 'leaflet';
 export const defaultIcon = L.divIcon({
   className: 'as-map-pin',
   html: `<div style="
-    background: #C77B4E;
+    background: #D4A373;
     border: 3px solid #fff;
     border-radius: 50% 50% 50% 0;
     transform: rotate(-45deg);

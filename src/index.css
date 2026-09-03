@@ -219,12 +219,12 @@ img {
 
 /* ============ ASIA STAYS REDESIGN v4 (Warm & Experiential Minimalist) ============ */
 :root {
-  --as-bg: #FDFBF7;
-  --as-surface: #F5F2EB;
-  --as-surface-alt: #EFEBE2;
+  --as-bg: #F5F0E8;
+  --as-surface: #F5F0E8;
+  --as-surface-alt: #E8DCC8;
   --as-text: #1A1A1A;
   --as-text-muted: #6B6358;
-  --as-accent: #C77B4E;          /* terracotta */
+  --as-accent: #D4A373;          /* terracotta (per Warm & Experiential Minimalist guide) */
   --as-accent-hover: #B36A3E;
   --as-accent-2: #7A7A52;       /* olive */
   --as-border: #E5E0D8;

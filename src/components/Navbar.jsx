@@ -217,7 +217,7 @@ export default function Navbar() {
         position: 'sticky',
         top: 0,
         zIndex: 1000,
-        backgroundColor: 'rgba(253,251,247,0.82)',
+        backgroundColor: 'rgba(245,240,232,0.82)',           /* beige #F5F0E8 */
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
         borderBottom: '1px solid var(--as-border)',
@@ -259,7 +259,7 @@ export default function Navbar() {
         </div>
 
         {menuOpen && (
-          <div className="mobile-nav-menu" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(253,251,247,0.98)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid var(--as-border)', padding: '1rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', zIndex: 999 }}>
+          <div className="mobile-nav-menu" style={{ position: 'absolute', top: '100%', left: 0, right: 0, backgroundColor: 'rgba(245,240,232,0.98)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)', borderBottom: '1px solid var(--as-border)', padding: '1rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', zIndex: 999 }}>
             <Link to="/about" onClick={() => setMenuOpen(false)} style={{ color: 'var(--as-text)', textDecoration: 'none', fontWeight: 600 }}>About</Link>
             <Link to="/owners" onClick={() => setMenuOpen(false)} style={{ color: 'var(--as-text)', textDecoration: 'none', fontWeight: 600 }}>Owners</Link>
             <Link to="/trust" onClick={() => setMenuOpen(false)} style={{ color: 'var(--as-text)', textDecoration: 'none', fontWeight: 600 }}>Trust</Link>
