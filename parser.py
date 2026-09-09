@@ -68,6 +68,8 @@ MAX_AGE_DAYS = 7
 MAX_PHOTOS = 10
 MIN_PHOTO_SIZE = 60 * 1024  # 60 KB
 HTTP_TIMEOUT = 8.0
+MSG_LIMIT = 2000  # Max messages to scan per channel (increased for more coverage)
+LLM_DELAY = 1.5  # Delay between LLM requests to avoid 429
 
 client = TelegramClient('danang_session', int(TG_API_ID), TG_API_HASH)
 supabase = create_client(
@@ -237,13 +239,25 @@ async def check_duplicate(hash_val: str, street: str, days: int = 7) -> bool:
     """Check if a listing with same hash + street exists in last N days."""
     try:
         since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        # More precise: check hash + similar street/area
         result = supabase.table('apartments') \
-            .select('id') \
+            .select('id', 'raw_address', 'title') \
             .eq('listing_hash', hash_val) \
             .gte('created_at', since) \
-            .limit(1) \
+            .limit(5) \
             .execute()
-        return len(result.data) > 0
+        if not result.data:
+            return False
+        # Check if street/area matches
+        for row in result.data:
+            existing_addr = (row.get('raw_address') or '').lower()
+            new_addr = (street or '').lower()
+            # Check similarity (at least 3 chars match)
+            if existing_addr and new_addr:
+                # Simple overlap check
+                if any(word in existing_addr for word in new_addr.split() if len(word) > 3):
+                    return True
+        return False
     except Exception:
         return False
 
@@ -342,8 +356,12 @@ async def main():
             print(f"\n📡 Channel: {channel.title}")
             
             media_groups = {}
+            msg_count = 0
             
-            async for msg in get_messages_with_threads(channel, limit=100):
+            # Process messages from last MAX_AGE_DAYS (with safety limit)
+            async for msg in client.iter_messages(channel, limit=MSG_LIMIT):
+                msg_count += 1
+                # Skip if older than MAX_AGE_DAYS
                 if msg.date and (now - msg.date > timedelta(days=MAX_AGE_DAYS)):
                     continue
                 if not msg.text and not msg.photo:
@@ -366,6 +384,8 @@ async def main():
                 if msg.photo:
                     media_groups[gid]["photo_messages"].append(msg)
             
+            print(f"  📊 Scanned {msg_count} messages, {len(media_groups)} groups")
+            
             for gid, data in media_groups.items():
                 text = data["text"]
                 if not data["photo_messages"]:
@@ -376,11 +396,18 @@ async def main():
                 # Extract via LLM
                 use_llm = os.getenv('NO_LLM') != '1'
                 if use_llm:
+                    # Add delay to avoid 429
+                    await asyncio.sleep(LLM_DELAY)
                     schema = listing_extractor.extract_listing_llm(text)
                 else:
                     schema = listing_extractor.extract_listing(text)
                 
                 if schema.price_amount is None or schema.price_amount <= 0:
+                    continue
+                
+                # Sanity check: skip obvious misreads
+                if schema.price_amount > 1_000_000_000:  # > 1 billion VND
+                    print(f"  ⚠️ Skipped (price too high): {schema.price_amount} {schema.price_currency.value}")
                     continue
                 
                 # Normalize price
@@ -463,6 +490,9 @@ async def main():
         
         except Exception as e:
             print(f"  ⚠️ Channel error: {e}")
+    
+    # Final cleanup
+    await cleanup_old_listings(days=4)
 
 
 def get_coords_fallback(text: str) -> Tuple[float, float]:
@@ -512,12 +542,27 @@ def extract_city(text: str) -> str:
             return city
     return 'Da Nang'
 
-def extract_contacts(text: str) -> str:
-    """Extract phone/TG contacts."""
-    phones = re.findall(r'(\+?\d{9,12})', text)
-    telegrams = re.findall(r'(@[\w_]{5,})', text)
-    contacts = list(set(telegrams + phones))
-    return ", ".join(contacts) if contacts else "Direct TG Message"
+def extract_contacts(text: str) -> dict:
+    """Extract phone/TG/WhatsApp contacts from text. Returns dict with tg, wa, label."""
+    if not text:
+        return {'tg': '', 'wa': '', 'label': 'Contact owner'}
+    
+    # Extract Telegram username (with or without @)
+    tg_match = re.search(r'@?([a-zA-Z0-9_]{4,32})', text)
+    tg = tg_match.group(1).replace('@', '') if tg_match else ''
+    
+    # Extract WhatsApp phone (digits, +, spaces)
+    wa_match = re.search(r'(\+?[\d\s]{8,})', text)
+    wa = wa_match.group(1).replace(' ', '').replace('-', '') if wa_match else ''
+    
+    # Determine label
+    label = 'Contact owner'
+    if tg:
+        label = 'Message on Telegram'
+    elif wa:
+        label = 'Message on WhatsApp'
+    
+    return {'tg': tg, 'wa': wa, 'label': label}
 
 def extract_features(text: str) -> List[str]:
     """Extract amenity features."""
