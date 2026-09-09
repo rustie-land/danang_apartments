@@ -331,3 +331,27 @@ def extract_listing_llm(text: str, api_key: str | None = None, model: str = "dee
     except Exception as e:  # noqa: BLE001
         print(f"    ⚠️ LLM extraction failed ({e}); falling back to regex")
         return extract_listing(text)
+
+
+# Rental listing filter (re-exported from parser for compatibility)
+def is_rental_listing(text: str) -> bool:
+    """Пропускаем только объявления о ДЛИТЕЛЬНОЙ АРЕНДЕ апартаментов.
+    Отбрасываем: продажу, инвестиции, авто/мото, заголовки-списки районов, ботов."""
+    t = text.lower()
+    reject = [
+        'покупк', 'купить', 'buy', 'sale', 'for sale', 'продаж', 'invest',
+        'инвест', 'авто', 'auto', 'мото', 'motorcycle', 'cars', '😎',
+    ]
+    if any(k in t for k in reject):
+        return False
+    rent_signals = [
+        'аренд', 'сдаётся', 'сдается', 'сниму', 'rent', 'for rent', 'rental',
+        'длительн', 'помесяч', 'long stay', 'monthly', 'lease', 'жильё', 'жилье',
+        'apartment', 'condo', 'квартир', 'studio', 'bedroom', 'спальн',
+    ]
+    if not any(k in t for k in rent_signals):
+        return False
+    tme_links = t.count('t.me/') + t.count('@')
+    if tme_links >= 3 and any(k in t for k in ['район', 'список', 'district', 'list']):
+        return False
+    return True
