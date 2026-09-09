@@ -51,7 +51,7 @@ export default function LandingPage() {
             <div style={{ position: 'absolute', bottom: '1.5rem', left: '1.5rem', right: '1.5rem', backgroundColor: 'rgba(26,26,26,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', padding: '1.25rem', borderRadius: 'var(--as-radius-card)', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
               <div>
                 <div style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.25rem', fontWeight: 600 }}>{t('brand')}</div>
-                <div style={{ fontSize: '0.75rem', color: '#E8DCC8' }}>Verified · Direct · Monthly</div>
+                <div style={{ fontSize: '0.75rem', color: '#E8DCC8' }}>Direct · Monthly</div>
               </div>
               <button onClick={goMap} style={{ backgroundColor: 'rgba(255,255,255,0.18)', color: '#fff', border: 'none', padding: '0.5rem 0.85rem', borderRadius: 'var(--as-radius-pill)', fontSize: '0.75rem', cursor: 'pointer' }}>
                 {t('selectZone')} ➔
@@ -79,7 +79,7 @@ export default function LandingPage() {
             {[
               ['1', 'Search', 'Filter by city, move-in date, term, rooms and budget.'],
               ['2', 'Pick an area', 'Pan the map and choose your zone — only relevant stays show.'],
-              ['3', 'Contact owner', 'Message verified owners directly. No agencies, no fees.'],
+              ['3', 'Contact owner', 'Message owners directly. No agencies, no fees.'],
             ].map(([n, t1, d]) => (
               <div key={n} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', backgroundColor: '#fff', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '1.1rem' }}>
                 <div style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--as-accent)', flexShrink: 0, width: '2rem' }}>{n}</div>

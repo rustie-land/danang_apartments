@@ -197,7 +197,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '0.85rem', marginBottom: '1.5rem' }}>
             <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg,#D9A679,#C77B4E)', flexShrink: 0 }}></div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.host || 'Verified owner'} <span style={{ fontSize: '0.7rem', color: 'var(--as-accent)', fontWeight: 600 }}>✓ Verified owner</span></div>
+              <div style={{ fontWeight: 700, color: 'var(--as-text)' }}>{property.host || 'Direct owner'} <span style={{ fontSize: '0.7rem', color: 'var(--as-accent)', fontWeight: 600 }}>✓ Direct owner</span></div>
               <div style={{ fontSize: '0.78rem', color: 'var(--as-text-muted)' }}>{property.hostStats || 'Responds within 2h · 28 stays hosted'}</div>
             </div>
           </div>
@@ -211,8 +211,14 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
             <button
               onClick={() => {
                 const msg = encodeURIComponent(`Hi! I'm interested in "${property.title}" (${convertPrice(property.price)}/mo). Is it still available?`);
-                const tgUser = property.contact && property.contact.tg ? property.contact.tg : 'ainavii';
-                window.open(`https://t.me/${tgUser}?text=${msg}`, '_blank');
+                let tgUser = property.contact && property.contact.tg ? property.contact.tg.trim() : '';
+                // Remove @ if present
+                tgUser = tgUser.replace(/^@/, '');
+                if (tgUser) {
+                  window.open(`https://t.me/${tgUser}?text=${msg}`, '_blank');
+                } else {
+                  alert('No Telegram contact available. Please email us.');
+                }
               }}
               style={{ backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
             >
@@ -220,7 +226,7 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
             </button>
             {property.contact && property.contact.wa && (
               <a
-                href={`https://wa.me/${property.contact.wa}`}
+                href={`https://wa.me/${property.contact.wa.replace(/[\s\-\(\)]/g, '')}`}
                 target="_blank"
                 rel="noopener"
                 style={{ backgroundColor: '#25D366', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}

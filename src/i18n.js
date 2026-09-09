@@ -5,7 +5,7 @@ export const STRINGS = {
     tagline: 'Find your long-term rental across Asia. Direct from owners.',
     heroTitle: 'Apartments for rent across Asia',
     heroSubtitle:
-      'Browse verified long-term rentals in Da Nang, Pattaya, Phuket and beyond. Contact owners directly — no agencies, no fees.',
+      'Browse long-term rentals in Da Nang, Pattaya, Phuket and beyond. Contact owners directly — no agencies, no fees.',
     browse: 'Browse rentals',
     selectZone: 'Choose search area',
     back: 'Back',

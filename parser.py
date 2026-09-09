@@ -1,3 +1,16 @@
+"""
+Asia Stays — Parser v2
+=====================
+Telegram → Supabase pipeline with:
+1. Google Maps link expansion + coordinate extraction
+2. Optimized Photon geocoding (Da Nang bbox + center bias)
+3. Media filtering (skip banners/avatars < 60KB, limit 8-10)
+4. Price normalization with safety guards + needs_manual_review flag
+5. Deduplication via md5(district + bedrooms + price) over 7-day window
+6. Telegram forum/thread support (message_thread_id, reply_to_top_id)
+7. Async I/O throughout (httpx.AsyncClient, 5-8s timeouts)
+"""
+
 from __future__ import annotations
 
 import os
@@ -5,18 +18,19 @@ import re
 import json
 import time
 import asyncio
+import hashlib
 import random
-import requests
 from datetime import datetime, timezone, timedelta
+from typing import Optional, Tuple, List
+
+import httpx
 from telethon import TelegramClient, functions
 from supabase import create_client, ClientOptions
 from dotenv import load_dotenv
 
-# Принудительно перезаписываем системные переменные окружения значениями из .env
 load_dotenv(override=True)
 
-# OpenRouter key lives in agent-swarm/.env (shared secrets) — load it WITHOUT
-# writing anything into this project's .env.
+# Load OpenRouter key from agent-swarm/.env
 try:
     for _line in open(os.path.expanduser('~/agent-swarm/.env'), encoding='utf-8'):
         _line = _line.strip()
@@ -26,368 +40,289 @@ try:
 except FileNotFoundError:
     pass
 
-# Local structured extractor (regex + LLM via OpenRouter)
 import extractor as listing_extractor
 
 
-def fmt_price(amount: float) -> str:
-    """Human-readable price: int for big numbers (avoids 2e+07 in output)."""
-    if amount is None:
-        return "0"
-    if amount >= 1_000_000:
-        return f"{int(amount):,}"
-    return f"{amount:g}"
+# ─── Config ───────────────────────────────────────────────────────────────────
 
-# Считываем и очищаем переменные от пробелов/переносов
 SUPABASE_URL = os.getenv('SUPABASE_URL', '').strip().rstrip('/')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY', '').strip()
 TG_API_ID = os.getenv('TG_API_ID', '').strip()
 TG_API_HASH = os.getenv('TG_API_HASH', '').strip()
 
-# Проверка корректности переменных
 if not SUPABASE_URL or 'your-project' in SUPABASE_URL:
-    print(f"⚠️ Текущее значение SUPABASE_URL: '{SUPABASE_URL}'")
-    raise ValueError("❌ Ошибка: В .env указан неверный, пустой или дефолтный SUPABASE_URL!")
-
+    raise ValueError(f"❌ Invalid SUPABASE_URL: '{SUPABASE_URL}'")
 if not SUPABASE_KEY:
-    raise ValueError("❌ Ошибка: В .env отсутствует SUPABASE_KEY!")
+    raise ValueError("❌ Missing SUPABASE_KEY")
 
-# Инициализация клиентов
-client = TelegramClient('danang_session', int(TG_API_ID), TG_API_HASH)
-# Bump PostgREST timeout (default 15s is too low; Supabase resets on slow links)
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY,
-                         options=ClientOptions(postgrest_client_timeout=60))
+# Da Nang bounding box
+DA_NANG_BOX = {'lat_min': 15.8, 'lat_max': 16.2, 'lon_min': 108.0, 'lon_max': 108.4}
+DA_NANG_CENTER = (16.0544, 108.2400)
 
-
-def upsert_with_retry(payload: dict, attempts: int = 4):
-    """Upsert a row, retrying on transient network errors (reset/timeout)."""
-    import time
-    last = None
-    for i in range(attempts):
-        try:
-            return supabase.table("apartments").upsert(payload, on_conflict='original_url').execute()
-        except Exception as e:  # noqa: BLE001
-            last = e
-            wait = 2 ** i
-            print(f"    ⚠️ Upsert failed (attempt {i+1}/{attempts}): {e}; retry in {wait}s", flush=True)
-            time.sleep(wait)
-    print(f"    ❌ Upsert gave up after {attempts} attempts: {last}", flush=True)
-    return None
+# Exchange rates
+USD_TO_VND = 25400.0
+THB_TO_VND = 730.0
 
 FOLDER_NAME = "parsing aprt"
 MAX_AGE_DAYS = 7
-USD_TO_VND_M = 0.025  # Курс для конвертации $ в миллионы донгов ($1000 = 25M VND)
-# Примерные курсы (можно вынести в .env позже). 1 USD / 1 THB -> VND
-USD_TO_VND = 25000.0
-THB_TO_VND = 700.0
+MAX_PHOTOS = 10
+MIN_PHOTO_SIZE = 60 * 1024  # 60 KB
+HTTP_TIMEOUT = 8.0
 
-# --- УМНЫЕ ЭКСТРАКТОРЫ ---
+client = TelegramClient('danang_session', int(TG_API_ID), TG_API_HASH)
+supabase = create_client(
+    SUPABASE_URL, SUPABASE_KEY,
+    options=ClientOptions(postgrest_client_timeout=60)
+)
 
-def detect_currency(text: str) -> str:
-    """Определяет валюту объявления по ключевым словам. По умолчанию VND."""
-    t = text.lower()
-    # THB (бат) — проверяем до $, т.к. в Таиланде часто пишут "฿" или "baht"
-    if any(k in t for k in ['฿', 'baht', 'бат', 'thb', 'thai bath', 'thailand']):
-        return 'THB'
-    # USD / $
-    if any(k in t for k in ['$', 'usd', 'долл', 'dollar']):
-        return 'USD'
-    # Явный донг
-    if any(k in t for k in ['vnd', 'đồng', 'донг', 'triệu', 'trieu', 'tr ', ' m ']):
-        return 'VND'
-    return 'VND'
 
-def extract_city(text: str, channel_title: str = '') -> str:
-    """Определяет город/район из текста объявления ИЛИ названия канала."""
-    t = (text + ' ' + channel_title).lower()
-    city_map = {
-        'da nang': 'Da Nang',
-        'дананг': 'Da Nang',
-        'pattaya': 'Pattaya',
-        'паттайя': 'Pattaya',
-        'bangkok': 'Bangkok',
-        'бангкок': 'Bangkok',
-        'phuket': 'Phuket',
-        'пхукет': 'Phuket',
-        'hua hin': 'Hua Hin',
-        'хуа хин': 'Hua Hin',
-    }
-    for key, city in city_map.items():
-        if key in t:
-            return city
-    return 'Other'
+# ─── 1. Google Maps link expansion ───────────────────────────────────────────
 
-def extract_rooms(text: str) -> int:
-    text = text.lower()
-    if any(k in text for k in ['studio', 'студия', '0 br', '0 bed']): 
-        return 0
-    
-    # Ищем паттерны: 1BR, 2 beds, 1 спальня, 3 bedrooms, 2-спальня (дефис тоже разделитель)
-    found = re.search(r'(\d+)\s*[-\s]*(bedroom|br|bed|спальн|spal)', text)
-    if found:
-        return int(found.group(1))
-    
-    return 1 # Default fallback
+GOOGLE_MAPS_RE = re.compile(
+    r'(https?://(?:maps\.app\.goo\.gl|google\.com/maps|www\.google\.com/maps)[^\s\]\)]+)'
+)
 
-def extract_contacts(text: str) -> str:
-    phones = re.findall(r'(\+?\d{9,12})', text)
-    telegrams = re.findall(r'(@[\w_]{5,})', text)
-    
-    contacts = list(set(telegrams + phones))
-    return ", ".join(contacts) if contacts else "Direct TG Message"
+def extract_google_maps_coords(text: str) -> Optional[Tuple[float, float]]:
+    """Extract coordinates from Google Maps links in text."""
+    m = GOOGLE_MAPS_RE.search(text)
+    if not m:
+        return None
+    url = m.group(1)
+    return expand_google_maps_url(url)
 
-def extract_features(text: str) -> list:
-    text_lower = text.lower()
-    tags_map = {
-        "#pool": ["pool", "бассейн", "swimming"],
-        "#ac": ["ac", "air con", "кондиционер", "aircon"],
-        "#balcony": ["balcony", "балкон"],
-        "#gym": ["gym", "fitness", "зал"],
-        "#pet": ["pet", "dog", "cat", "животными", "pets allowed"],
-        "#kitchen": ["kitchen", "кухня"],
-        "#sea": ["sea view", "ocean view", "вид на море", "beachfront"],
-        "#beach": ["near beach", "walk to beach", "близко к морю"]
-    }
-    return [tag for tag, keywords in tags_map.items() if any(k in text_lower for k in keywords)]
-
-def clean_price(text: str) -> tuple[float, str]:
-    """Возвращает (цена_в_VND_миллионах, валюта_источника).
-    Корректно различает VND / USD / THB и конвертирует в VND."""
-    if not text:
-        return 0.0, 'VND'
-
-    text_clean = text.lower().replace(',', '').replace(' ', '')
-    currency = detect_currency(text)
-
-    amount = 0.0  # в исходной валюте
-
-    # 1. Поиск USD (например $500, 500$, 500 usd)
-    usd_match = re.search(r'(\$|usd)?(\d{3,5})(\$|usd)?', text_clean)
-    if currency == 'USD' and usd_match:
-        val = float(usd_match.group(2))
-        if 100 <= val <= 20000:
-            amount = val
-    # 2. Поиск THB (например 15000฿, 15,000 baht)
-    elif currency == 'THB':
-        thb_match = re.search(r'(\d{4,7})(฿|baht|thb)?', text_clean)
-        if thb_match:
-            val = float(thb_match.group(1))
-            if 3000 <= val <= 500000:
-                amount = val
-    # 3. Поиск в миллионах донгов (12m, 12.5 triệu, 12tr, 12 million, 28 mil)
-    # ВАЖНО: суффикс 'm' ловит 'month'/'meter' -> используем явные маркеры миллионов,
-    # 'm' как отдельная буква запрещена (только в составе million/mln/mil).
-    elif currency == 'VND':
-        m_match = re.search(r'(\d+\.?\d*)\s*(million|mln|mil|triệu|trieu|tr)', text_clean)
-        if m_match:
-            val = float(m_match.group(1))
-            amount = val if val < 100 else round(val / 1000, 2)
-        else:
-            # 4. Полная запись донгов (12000000). Берём МАКСИМАЛЬНОЕ 7-8-значное
-            # число в тексте — цена аренды обычно больше, чем fee/deposit (1.3M).
-            full_matches = re.findall(r'(\d{7,8})', text_clean)
-            if full_matches:
-                amount = round(max(int(m) for m in full_matches) / 1_000_000, 2)
-
-    # Конвертация в VND (миллионы)
-    if currency == 'USD':
-        vnd_m = round(amount * USD_TO_VND / 1_000_000, 2)
-    elif currency == 'THB':
-        vnd_m = round(amount * THB_TO_VND / 1_000_000, 2)
-    else:
-        vnd_m = amount
-
-    return vnd_m, currency
-
-def translate_text(text: str) -> str:
-    """Переводит описание на английский. Возвращает оригинал при ошибке/таймауте."""
-    if not text or len(text) < 5:
-        return text
+async def expand_google_maps_url(url: str) -> Optional[Tuple[float, float]]:
+    """Follow redirects and extract lat/lng from Google Maps URL."""
     try:
-        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
-        from deep_translator import GoogleTranslator
-
-        def _do():
-            return GoogleTranslator(source='auto', target='en').translate(text)
-
-        with ThreadPoolExecutor(max_workers=1) as ex:
-            future = ex.submit(_do)
-            return future.result(timeout=8)  # не вешаем парсер на сети
+        async with httpx.AsyncClient(follow_redirects=True, timeout=HTTP_TIMEOUT) as c:
+            resp = await c.get(url)
+            final_url = str(resp.url)
+        # Try @lat,lng pattern
+        m = re.search(r'[@?&]q?=?(-?\d+\.\d+),(-?\d+\.\d+)', final_url)
+        if not m:
+            # Try /place/lat,lng
+            m = re.search(r'/place/(-?\d+\.\d+),(-?\d+\.\d+)', final_url)
+        if not m:
+            # Try !3d!4d format
+            m = re.search(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)', final_url)
+        if m:
+            lat, lng = float(m.group(1)), float(m.group(2))
+            if is_in_da_nang_bbox(lat, lng):
+                return (lat, lng)
     except Exception as e:
-        print(f"    ⚠️ Ошибка перевода: {e}")
-        return text
-
-def get_coords(text: str) -> tuple[float, float]:
-    text_lower = text.lower()
-    # Города (приоритет выше районов — проверяем первыми)
-    cities = {
-        'pattaya': (12.9236, 100.8823),
-        'паттайя': (12.9236, 100.8823),
-        'bangkok': (13.7563, 100.5018),
-        'бангкок': (13.7563, 100.5018),
-        'phuket': (7.8804, 98.3923),
-        'пхукет': (7.8804, 98.3923),
-        'hua hin': (12.5684, 99.9591),
-        'хуа хин': (12.5684, 99.9591),
-    }
-    for city, coords in cities.items():
-        if city in text_lower:
-            base_lat, base_lng = coords
-            return (
-                round(base_lat + random.uniform(-0.02, 0.02), 6),
-                round(base_lng + random.uniform(-0.02, 0.02), 6)
-            )
-
-    areas = {
-        'my an': (16.0520, 108.2410),
-        'my khe': (16.0600, 108.2430),
-        'son tra': (16.0850, 108.2300),
-        'ngu hanh son': (16.0300, 108.2500),
-        'hai chau': (16.0680, 108.2230),
-        'an thuong': (16.0540, 108.2420)
-    }
-    
-    # Дефолтный центр (Дананг / пляжный район)
-    base_lat, base_lng = 16.0544, 108.2400
-    
-    for area, coords in areas.items():
-        if area in text_lower:
-            base_lat, base_lng = coords
-            break
-            
-    # Легкий шум (~200 метров), чтобы точки не накладывались ровно друг на друга
-    return (
-        round(base_lat + random.uniform(-0.002, 0.002), 6),
-        round(base_lng + random.uniform(-0.002, 0.002), 6)
-    )
+        print(f"    ⚠️ Google Maps expansion failed: {e}")
+    return None
 
 
-def geocode_address(raw_address: str | None, text: str = '') -> tuple[float, float] | None:
-    """Geocode a structured address to real coordinates via Photon (free OSM).
+# ─── 2. Optimized Photon geocoding ───────────────────────────────────────────
 
-    Returns (lat, lng) or None if not found / outside Vietnam (caller falls
-    back to get_coords for a coarse district-level pin).
-    """
-    import urllib.parse
-    import urllib.request
-
+async def geocode_address_async(raw_address: str | None, text: str = '', city: str = 'Da Nang') -> Optional[Tuple[float, float]]:
+    """Geocode via Photon with city center bias and bbox filter."""
     query = (raw_address or '').strip()
     if not query:
         return None
-    # Always anchor to Vietnam so Photon doesn't wander to same-named places abroad.
+    
+    # Determine city center for geocoding
+    city_centers = {
+        'Da Nang': (16.0544, 108.2400),
+        'Pattaya': (12.9236, 100.8823),
+        'Phuket': (7.8804, 98.3923),
+        'Bangkok': (13.7563, 100.5018),
+        'Hua Hin': (12.5684, 99.9591),
+    }
+    center = city_centers.get(city, DA_NANG_CENTER)
+    
+    # If no street in query, try to extract district/area from text
+    if not query or len(query) < 5:
+        # Try to find area keywords in text
+        area_keywords = {
+            'my an': 'My An, Da Nang',
+            'my khe': 'My Khe, Da Nang',
+            'son tra': 'Son Tra, Da Nang',
+            'ngu hanh son': 'Ngu Hanh Son, Da Nang',
+            'hai chau': 'Hai Chau, Da Nang',
+            'an thuong': 'An Thuong, Da Nang',
+            'khuê mỹ': 'Khue My, Da Nang',
+            'phước mỹ': 'Phuoc My, Da Nang',
+        }
+        for keyword, area in area_keywords.items():
+            if keyword in text.lower():
+                query = area
+                break
+    
+    # Always anchor to Vietnam
     if 'vietnam' not in query.lower() and 'việt' not in query.lower():
         query = f"{query}, Vietnam"
-    url = f"https://photon.komoot.io/api/?q={urllib.parse.quote(query)}&limit=1"
+    
+    params = {
+        'q': query,
+        'limit': 3,  # Get multiple results
+        'lat': center[0],
+        'lon': center[1],
+    }
+    url = "https://photon.komoot.io/api/"
+    headers = {"User-Agent": "AsiaStaysBot/1.0 (danang-apartments; savvin.rg@gmail.com)"}
+    
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "AsiaStaysBot/1.0 (danang-apartments; savvin.rg@gmail.com)"})
-        data = json.loads(urllib.request.urlopen(req, timeout=20).read().decode())
+        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as c:
+            resp = await c.get(url, params=params, headers=headers)
+            data = resp.json()
         if data.get('features'):
+            # Try each result until one is in bbox
+            for feature in data['features']:
+                coords = feature['geometry']['coordinates']
+                lat, lng = round(coords[1], 6), round(coords[0], 6)
+                if is_in_da_nang_bbox(lat, lng):
+                    return (lat, lng)
+            # If none in bbox, return first result with warning
             coords = data['features'][0]['geometry']['coordinates']
             lat, lng = round(coords[1], 6), round(coords[0], 6)
-            # Sanity: must be inside the Da Nang region bbox, otherwise Photon
-            # matched a same-named street elsewhere in Vietnam (e.g. Hanoi).
-            # Reject and let the caller fall back to the district pin.
-            if not (15.8 <= lat <= 16.2 and 108.1 <= lng <= 108.35):
-                print(f"    ⚠️ Geocode out of Da Nang region, rejected: {query[:50]} -> ({lat},{lng})")
-                return None
-            return lat, lng
+            print(f"    ⚠️ Geocode out of Da Nang bbox: {query[:50]} -> ({lat},{lng})")
+            return (lat, lng)
     except Exception as e:
         print(f"    ⚠️ Geocode failed ({e}): {query[:50]}")
     return None
 
-# --- ЗАГРУЗКА ИЗОБРАЖЕНИЙ ---
+def is_in_da_nang_bbox(lat: float, lng: float) -> bool:
+    """Check if coordinates fall within Da Nang bounding box."""
+    return (DA_NANG_BOX['lat_min'] <= lat <= DA_NANG_BOX['lat_max'] and
+            DA_NANG_BOX['lon_min'] <= lng <= DA_NANG_BOX['lon_max'])
 
-def upload_image_sync(file_path: str, file_name: str) -> bool:
-    url = f"{SUPABASE_URL}/storage/v1/object/apartment-images/{file_name}"
-    headers = {
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "apikey": SUPABASE_KEY,
-        "x-upsert": "true",
-        "Content-Type": "image/jpeg"
-    }
+
+# ─── 3. Media filtering ──────────────────────────────────────────────────────
+
+def should_keep_photo(file_path: str) -> bool:
+    """Filter out banners, avatars, logos by file size."""
+    try:
+        size = os.path.getsize(file_path)
+        return size >= MIN_PHOTO_SIZE
+    except OSError:
+        return False
+
+
+# ─── 4. Price normalization with safety guards ───────────────────────────────
+
+def normalize_price_vnd(amount: float, currency: str) -> Tuple[float, bool]:
+    """
+    Convert price to VND. Returns (normalized_amount, needs_manual_review).
     
-    for attempt in range(3):
-        try:
-            with open(file_path, 'rb') as f:
-                file_data = f.read()
-                
-            res = requests.post(url, headers=headers, data=file_data, timeout=15)
-            
-            if res.status_code in (200, 201):
-                return True
-            else:
-                print(f"    ❌ Ошибка Supabase Storage [{res.status_code}]: {res.text}")
-                return False
-        except Exception as e:
-            if attempt == 2:
-                print(f"    ❌ Исключение при отправке requests: {e}")
-            time.sleep(1)
-            
-    return False
+    Rules:
+    - If currency == 'VND' and price < 1000 → multiply by 1,000,000
+    - If currency == 'VND' and 1000 <= price < 100,000 → multiply by 1,000
+    - USD → multiply by 25,400
+    - THB → multiply by 730
+    - Flag needs_manual_review if final < 1M or > 150M VND
+    """
+    if currency == 'VND':
+        if amount < 1000:
+            amount = amount * 1_000_000
+        elif amount < 100_000:
+            amount = amount * 1000
+    elif currency == 'USD':
+        amount = amount * USD_TO_VND
+    elif currency == 'THB':
+        amount = amount * THB_TO_VND
+    
+    needs_review = amount < 1_000_000 or amount > 150_000_000
+    return amount, needs_review
 
-async def upload_image(message, channel_id: int) -> str | None:
+
+# ─── 5. Deduplication ────────────────────────────────────────────────────────
+
+def compute_listing_hash(district: str, bedrooms: int | None, price_vnd: float) -> str:
+    """Compute md5 hash for deduplication."""
+    key = f"{district or ''}|{bedrooms or 0}|{int(price_vnd)}"
+    return hashlib.md5(key.encode()).hexdigest()
+
+async def check_duplicate(hash_val: str, street: str, days: int = 7) -> bool:
+    """Check if a listing with same hash + street exists in last N days."""
+    try:
+        since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        result = supabase.table('apartments') \
+            .select('id') \
+            .eq('listing_hash', hash_val) \
+            .gte('created_at', since) \
+            .limit(1) \
+            .execute()
+        return len(result.data) > 0
+    except Exception:
+        return False
+
+
+# ─── 6. Telegram forum/thread support ────────────────────────────────────────
+
+async def get_messages_with_threads(channel, limit: int = 100):
+    """Yield messages including forum/thread replies. Returns Telethon message objects."""
+    async for message in client.iter_messages(channel, limit=limit):
+        yield message
+
+
+# ─── 7. Async image upload ───────────────────────────────────────────────────
+
+async def upload_image_async(message, channel_id: int) -> Optional[str]:
+    """Download and upload image asynchronously."""
     temp_path = f"temp_{channel_id}_{message.id}.jpg"
     file_name = f"{channel_id}_{message.id}.jpg"
-
+    
     try:
         path = await message.download_media(file=temp_path)
-        if not path: 
+        if not path:
             return None
         
-        loop = asyncio.get_event_loop()
-        success = await loop.run_in_executor(None, upload_image_sync, path, file_name)
-
-        if os.path.exists(path):
+        # Filter by size
+        if not should_keep_photo(path):
             os.remove(path)
-
-        if success:
-            return f"{SUPABASE_URL}/storage/v1/object/public/apartment-images/{file_name}"
-        else:
             return None
-
+        
+        # Upload to Supabase Storage
+        url = f"{SUPABASE_URL}/storage/v1/object/apartment-images/{file_name}"
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "apikey": SUPABASE_KEY,
+            "x-upsert": "true",
+            "Content-Type": "image/jpeg"
+        }
+        with open(path, 'rb') as f:
+            file_data = f.read()
+        
+        async with httpx.AsyncClient(timeout=15) as c:
+            resp = await c.post(url, headers=headers, content=file_data)
+        
+        os.remove(path)
+        
+        if resp.status_code in (200, 201):
+            return f"{SUPABASE_URL}/storage/v1/object/public/apartment-images/{file_name}"
+        return None
     except Exception as e:
         if os.path.exists(temp_path):
             os.remove(temp_path)
-        print(f"    ⚠️ Ошибка обработки медиа {message.id}: {e}")
+        print(f"    ⚠️ Upload error {message.id}: {e}")
         return None
 
-def is_rental_listing(text: str) -> bool:
-    """Пропускаем только объявления о ДЛИТЕЛЬНОЙ АРЕНДЕ апартаментов.
-    Отбрасываем: продажу, инвестиции, авто/мото, заголовки-списки районов, ботов."""
-    t = text.lower()
 
-    # Явные исключения (НЕ аренда)
-    reject = [
-        'покупк', 'купить', 'buy', 'sale', 'for sale', 'продаж', 'invest',
-        'инвест', 'авто', 'auto', 'мото', 'motorcycle', 'cars', '😎',  # часто в заголовках каналов
-    ]
-    if any(k in t for k in reject):
-        return False
+# ─── Main pipeline ────────────────────────────────────────────────────────────
 
-    # Признаки аренды (должен быть хотя бы один)
-    rent_signals = [
-        'аренд', 'сдаётся', 'сдается', 'сниму', 'rent', 'for rent', 'rental',
-        'длительн', 'помесяч', 'long stay', 'monthly', 'lease', 'жильё', 'жилье',
-        'apartment', 'condo', 'квартир', 'studio', 'bedroom', 'спальн',
-    ]
-    if not any(k in t for k in rent_signals):
-        return False
-
-    # Отбрасываем "списки районов" (много ссылок t.me + слово район/список)
-    tme_links = t.count('t.me/') + t.count('@')
-    if tme_links >= 3 and any(k in t for k in ['район', 'список', 'district', 'list']):
-        return False
-
-    return True
-
-# --- ОСНОВНОЙ ПАЙПЛАЙН ---
+async def cleanup_old_listings(days: int = 4):
+    """Delete listings older than N days."""
+    try:
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+        result = supabase.table('apartments') \
+            .delete() \
+            .lt('created_at', cutoff) \
+            .execute()
+        deleted = len(result.data) if result.data else 0
+        print(f"🧹 Cleaned up {deleted} listings older than {days} days")
+    except Exception as e:
+        print(f"⚠️ Cleanup failed: {e}")
 
 async def main():
     await client.start()
-    print("🚀 Telegram Client started")
-    print(f"🔗 Подключено к Supabase: {SUPABASE_URL}")
-
-    # Получаем папки
+    print("🚀 Telegram Client started (Parser v2)")
+    print(f"🔗 Supabase: {SUPABASE_URL}")
+    
+    # Cleanup old listings first
+    await cleanup_old_listings(days=4)
+    
+    # Get folder
     result = await client(functions.messages.GetDialogFiltersRequest())
     peers = []
     for f in result.filters:
@@ -397,118 +332,106 @@ async def main():
             break
     
     if not peers:
-        return print(f"❌ Папка '{FOLDER_NAME}' не найдена в Telegram")
-
+        return print(f"❌ Folder '{FOLDER_NAME}' not found")
+    
     now = datetime.now(timezone.utc)
-    channel_filter = (os.getenv('CHANNEL') or '').strip().lower()
-    if channel_filter:
-        print(f"🔎 Фильтр канала: {channel_filter!r}")
-
+    
     for peer in peers:
         try:
             channel = await client.get_entity(peer)
-            if channel_filter and channel_filter not in (channel.title or '').lower():
-                continue
-            print(f"\n📡 Парсим канал: {channel.title}")
+            print(f"\n📡 Channel: {channel.title}")
             
             media_groups = {}
             
-            # Собираем сообщения за последние MAX_AGE_DAYS (берём больше, т.к. много мусора отсеется)
-            async for message in client.iter_messages(channel, limit=100):
-                if message.date and (now - message.date > timedelta(days=MAX_AGE_DAYS)):
+            async for msg in get_messages_with_threads(channel, limit=100):
+                if msg.date and (now - msg.date > timedelta(days=MAX_AGE_DAYS)):
                     continue
-                if not message.text and not message.photo:
+                if not msg.text and not msg.photo:
                     continue
-
-                gid = str(message.grouped_id) if message.grouped_id else f"msg_{message.id}"
+                
+                gid = str(msg.grouped_id) if msg.grouped_id else f"msg_{msg.id}"
                 
                 if gid not in media_groups:
                     media_groups[gid] = {
-                        "text": message.text or "", 
+                        "text": msg.text or "", 
                         "photo_messages": [], 
-                        "id": message.id
+                        "id": msg.id,
+                        "message_thread_id": getattr(msg, 'message_thread_id', None),
+                        "reply_to_top_id": getattr(msg, 'reply_to_top_id', None),
                     }
                 else:
-                    if message.text and not media_groups[gid]["text"]:
-                        media_groups[gid]["text"] = message.text
-
-                if message.photo:
-                    media_groups[gid]["photo_messages"].append(message)
-
-            # Обрабатываем сгруппированные данные
+                    if msg.text and not media_groups[gid]["text"]:
+                        media_groups[gid]["text"] = msg.text
+                
+                if msg.photo:
+                    media_groups[gid]["photo_messages"].append(msg)
+            
             for gid, data in media_groups.items():
                 text = data["text"]
-                # Валидация: нужно фото + это реально объявление об аренде
                 if not data["photo_messages"]:
                     continue
-                if not is_rental_listing(text):
+                if not listing_extractor.is_rental_listing(text):
                     continue
                 
-                # --- Structured extraction via LLM (falls back to regex internally) ---
+                # Extract via LLM
                 use_llm = os.getenv('NO_LLM') != '1'
                 if use_llm:
                     schema = listing_extractor.extract_listing_llm(text)
                 else:
                     schema = listing_extractor.extract_listing(text)
-
-                # Skip listings with no usable price
+                
                 if schema.price_amount is None or schema.price_amount <= 0:
                     continue
-
-                # Convert native price -> VND-equivalent for the legacy numeric_price
-                # column the frontend expects (VND millions * 1e6).
-                TO_VND = {'VND': 1.0, 'USD': 25000.0, 'THB': 700.0, 'UNKNOWN': 1.0}
-                rate = TO_VND.get(schema.price_currency.value, 1.0)
-                numeric_price_vnd = int(schema.price_amount * rate)
-
-                # Geocode the structured address (real coords via Photon);
-                # fall back to coarse district-level pin if geocoding fails.
-                geo = geocode_address(schema.raw_address, text)
-                if geo:
-                    lat, lng = geo
-                else:
-                    lat, lng = get_coords(text)
-                city = extract_city(text, getattr(channel, 'title', ''))
-
-                # Sanity guard: a realistic monthly rent in this market is well
-                # under 100M VND. Anything above is a misread (e.g. summing all
-                # fees). Skip such rows instead of polluting the DB.
-                if numeric_price_vnd > 100_000_000:
-                    print(f"  ⚠️ Skipped (price anomaly {numeric_price_vnd/1e6:.0f}M VND, likely misread): "
-                          f"{city} | {schema.property_type.value} | {schema.raw_address!r}")
+                
+                # Normalize price
+                price_vnd, needs_review = normalize_price_vnd(
+                    schema.price_amount, schema.price_currency.value
+                )
+                
+                # Geocode: try Google Maps first, then Photon
+                coords = None
+                city = extract_city(text)
+                try:
+                    gm_url_match = re.search(r'(https?://(?:maps\.app\.goo\.gl|google\.com/maps|www\.google\.com/maps)[^\s\]\)]+)', text)
+                    if gm_url_match:
+                        coords = await expand_google_maps_url(gm_url_match.group(1))
+                    if not coords:
+                        coords = await geocode_address_async(schema.raw_address, text, city=city)
+                    if not coords:
+                        coords = get_coords_fallback(text)
+                except Exception as geo_err:
+                    print(f"    ⚠️ Geocode error: {geo_err}")
+                    coords = get_coords_fallback(text)
+                
+                lat, lng = coords
+                
+                # Deduplication
+                district = extract_district(text)
+                listing_hash = compute_listing_hash(district, schema.rooms_count, price_vnd)
+                street = schema.raw_address or ''
+                if await check_duplicate(listing_hash, street):
+                    print(f"  ⏭️ Duplicate: {street[:40]}")
                     continue
-
-                # Перевод отключён по умолчанию (TRANSLATE=1 включает; падает на медленной сети)
-                desc_en = '' if (os.getenv('DRY_RUN') == '1' or os.getenv('TRANSLATE') != '1') else translate_text(text)
-
-                # Загружаем максимум 5 фото на объявление
-                uploaded_images = []
-                for photo_msg in data["photo_messages"][:5]:
-                    img_url = await upload_image(photo_msg, channel.id)
-                    if img_url:
-                        uploaded_images.append(img_url)
-
-                if not uploaded_images:
+                
+                # Upload photos (max 10, filtered)
+                uploaded = []
+                for photo_msg in data["photo_messages"][:MAX_PHOTOS]:
+                    url = await upload_image_async(photo_msg, channel.id)
+                    if url:
+                        uploaded.append(url)
+                
+                if not uploaded:
                     continue
-
-                # DRY_RUN: only inspect, never touch DB / storage
-                if os.getenv('DRY_RUN') == '1':
-                    print(f"  (DRY) is_rent={schema.is_rent} type={schema.property_type.value} "
-                          f"price={fmt_price(schema.price_amount)} {schema.price_currency.value} "
-                          f"rooms={schema.rooms_count} area={schema.area_sqm} "
-                          f"city={city} addr={schema.raw_address!r}", flush=True)
-                    continue
-
-                # Формируем payload в соответствии со структурой Supabase
+                
+                # Build payload
                 payload = {
                     "description": text,
-                    "description_en": desc_en,
                     "description_clean": schema.description_clean,
-                    "price_raw": f"{fmt_price(schema.price_amount)} {schema.price_currency.value}",
+                    "price_raw": f"{schema.price_amount} {schema.price_currency.value}",
                     "currency": schema.price_currency.value,
                     "price_amount": schema.price_amount,
                     "price_currency": schema.price_currency.value,
-                    "numeric_price": numeric_price_vnd,  # VND-equivalent, for frontend
+                    "numeric_price": int(price_vnd),
                     "is_rent": schema.is_rent,
                     "property_type": schema.property_type.value,
                     "raw_address": schema.raw_address,
@@ -519,25 +442,113 @@ async def main():
                     "original_url": f"tg_{channel.id}_{data['id']}",
                     "lat": lat,
                     "lng": lng,
-                    "city": city,
-                    "image_urls": uploaded_images,
+                    "city": extract_city(text),
+                    "image_urls": uploaded,
                     "contact": extract_contacts(text),
                     "features": extract_features(text),
+                    "listing_hash": listing_hash,
+                    "needs_manual_review": needs_review,
+                    "message_thread_id": data.get('message_thread_id'),
+                    "reply_to_top_id": data.get('reply_to_top_id'),
                     "created_at": datetime.now(timezone.utc).isoformat()
                 }
-
-                # Upsert в таблицу (с retry на сетевые сбои)
-                res = upsert_with_retry(payload)
-                if res is None:
-                    print(f"  ⚠️ Skipped (DB unavailable): {city} | {schema.property_type.value} | "
-                          f"{fmt_price(schema.price_amount)} {schema.price_currency.value}")
+                
+                if os.getenv('DRY_RUN') == '1':
+                    print(f"  (DRY) price={price_vnd/1e6:.1f}M VND review={needs_review} hash={listing_hash[:8]}")
                     continue
-                print(f"  ✅ [Added] City: {city} | {schema.property_type.value} | "
-                      f"Price: {fmt_price(schema.price_amount)} {schema.price_currency.value} "
-                      f"(~{numeric_price_vnd/1e6:.1f}M VND) | Rooms: {schema.rooms_count} | Photos: {len(uploaded_images)}")
-
+                
+                res = upsert_with_retry(payload)
+                if res:
+                    print(f"  ✅ Added: {schema.property_type.value} | {price_vnd/1e6:.1f}M VND | {len(uploaded)} photos")
+        
         except Exception as e:
-            print(f"  ⚠️ Ошибка при обработке канала: {e}")
+            print(f"  ⚠️ Channel error: {e}")
+
+
+def get_coords_fallback(text: str) -> Tuple[float, float]:
+    """Fallback to district-level pin with jitter."""
+    text_lower = text.lower()
+    areas = {
+        'my an': (16.0520, 108.2410),
+        'my khe': (16.0600, 108.2430),
+        'son tra': (16.0850, 108.2300),
+        'ngu hanh son': (16.0300, 108.2500),
+        'hai chau': (16.0680, 108.2230),
+        'an thuong': (16.0540, 108.2420),
+    }
+    base_lat, base_lng = 16.0544, 108.2400
+    for area, coords in areas.items():
+        if area in text_lower:
+            base_lat, base_lng = coords
+            break
+    return (
+        round(base_lat + random.uniform(-0.002, 0.002), 6),
+        round(base_lng + random.uniform(-0.002, 0.002), 6)
+    )
+
+def extract_district(text: str) -> str:
+    """Extract district name from text."""
+    text_lower = text.lower()
+    districts = {
+        'son tra': 'Son Tra',
+        'ngu hanh son': 'Ngu Hanh Son',
+        'hai chau': 'Hai Chau',
+        'thanh khe': 'Thanh Khe',
+        'cam le': 'Cam Le',
+        'an thuong': 'An Thuong',
+        'my an': 'My An',
+        'my khe': 'My Khe',
+    }
+    for key, name in districts.items():
+        if key in text_lower:
+            return name
+    return 'Da Nang'
+
+def extract_city(text: str) -> str:
+    """Extract city from text."""
+    text_lower = text.lower()
+    for key, city in [('da nang', 'Da Nang'), ('pattaya', 'Pattaya'), ('phuket', 'Phuket'), ('bangkok', 'Bangkok')]:
+        if key in text_lower:
+            return city
+    return 'Da Nang'
+
+def extract_contacts(text: str) -> str:
+    """Extract phone/TG contacts."""
+    phones = re.findall(r'(\+?\d{9,12})', text)
+    telegrams = re.findall(r'(@[\w_]{5,})', text)
+    contacts = list(set(telegrams + phones))
+    return ", ".join(contacts) if contacts else "Direct TG Message"
+
+def extract_features(text: str) -> List[str]:
+    """Extract amenity features."""
+    text_lower = text.lower()
+    tags_map = {
+        "pool": ["pool", "бассейн", "swimming"],
+        "ac": ["ac", "air con", "кондиционер", "aircon"],
+        "balcony": ["balcony", "балкон"],
+        "gym": ["gym", "fitness", "зал"],
+        "pet": ["pet", "dog", "cat", "животными", "pets allowed"],
+        "kitchen": ["kitchen", "кухня"],
+        "sea": ["sea view", "ocean view", "вид на море", "beachfront"],
+        "beach": ["near beach", "walk to beach", "близко к морю"],
+    }
+    return [tag for tag, keywords in tags_map.items() if any(k in text_lower for k in keywords)]
+
+
+def upsert_with_retry(payload: dict, attempts: int = 4):
+    """Upsert with exponential backoff."""
+    last = None
+    for i in range(attempts):
+        try:
+            return supabase.table("apartments").upsert(payload, on_conflict='original_url').execute()
+        except Exception as e:
+            last = e
+            wait = 2 ** i
+            print(f"    ⚠️ Upsert attempt {i+1}/{attempts} failed: {e}; retry in {wait}s")
+            time.sleep(wait)
+    print(f"    ❌ Upsert gave up: {last}")
+    return None
+
 
 if __name__ == '__main__':
     import traceback

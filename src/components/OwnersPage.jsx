@@ -16,7 +16,7 @@ export default function OwnersPage() {
 
         <div style={{ display: 'grid', gap: '1rem', marginBottom: '2rem' }}>
           {[
-            ['1. Post in minutes', 'Add photos, price per month, deposit and utilities. Verified owners get a ✓ badge.'],
+            ['1. Post in minutes', 'Add photos, price per month, deposit and utilities. Owners get a ✓ badge.'],
             ['2. Get matched', 'Tenants filter by city, term and amenities. Your listing appears to the right renters.'],
             ['3. Communicate directly', 'Chat with prospective tenants on-platform. No commission, ever.'],
           ].map(([t, d]) => (

@@ -14,11 +14,11 @@ export default function AboutPage() {
           Asia Stays is a peer-to-peer marketplace for monthly and long-term apartment rentals in Da Nang, Pattaya, Phuket and beyond. We connect renters directly with property owners — no agencies, no hidden fees.
         </p>
         <p style={{ color: 'var(--as-text-muted)', fontSize: '1.05rem', lineHeight: 1.7, marginBottom: '1.5rem' }}>
-          Our mission is to make moving abroad simple and trustworthy — verified owners, transparent pricing, and direct contact with no middlemen.
+          Our mission is to make moving abroad simple and trustworthy — direct owners, transparent pricing, and contact with no middlemen.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: '1rem', margin: '2rem 0' }}>
-          {[['Cities', 'Da Nang & APAC'], ['Listings', '164 verified'], ['Model', 'Direct owner'], ['Fees', 'Zero commission']].map(([k, v]) => (
+          {[['Cities', 'Da Nang & APAC'], ['Listings', '164 direct'], ['Model', 'Direct owner'], ['Fees', 'Zero commission']].map(([k, v]) => (
             <div key={k} style={{ backgroundColor: 'var(--as-surface)', border: '1px solid var(--as-border)', borderRadius: 'var(--as-radius-card)', padding: '1.25rem' }}>
               <div style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.8rem', color: 'var(--as-accent)' }}>{v}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--as-text-muted)' }}>{k}</div>

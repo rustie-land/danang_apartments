@@ -1,5 +1,5 @@
 const POINTS = [
-  ['✓ Verified owners', 'ID and phone checks. Look for the ✓ Verified badge on profiles and listings.'],
+  ['✓ Direct owners', 'ID and phone checks. Look for the ✓ Direct badge on profiles and listings.'],
   ['⭐ Two-way reviews', 'Renters and owners rate each other after each stay — accountability on both sides.'],
   ['💬 On-platform messaging', 'Keep all communication inside Asia Stays so we can help if something goes wrong.'],
   ['🛡️ Dispute resolution', 'Our team mediates conflicts with evidence from both parties.'],
