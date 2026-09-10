@@ -600,9 +600,14 @@ def extract_contacts(text: str) -> dict:
     if not text:
         return {'tg': '', 'wa': '', 'label': 'Contact owner'}
     
-    # Extract Telegram username (with or without @)
-    tg_match = re.search(r'@?([a-zA-Z0-9_]{4,32})', text)
-    tg = tg_match.group(1).replace('@', '') if tg_match else ''
+    # Extract Telegram username (look for @username pattern, but skip common false positives)
+    false_positives = {'brand', 'apartment', 'last', 'the', 'this', 'that', 'your', 'our', 'my', 'hiepho', 'danang', 'operator'}
+    tg = ''
+    tg_match = re.search(r'@([a-zA-Z0-9_]{4,32})', text)
+    if tg_match:
+        candidate = tg_match.group(1).lower()
+        if candidate not in false_positives:
+            tg = candidate
     
     # Extract WhatsApp phone (digits, +, spaces)
     wa_match = re.search(r'(\+?[\d\s]{8,})', text)

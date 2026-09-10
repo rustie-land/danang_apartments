@@ -221,7 +221,12 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
               <button
                 onClick={() => {
                   const msg = encodeURIComponent(`Hi! I'm interested in "${property.title}" (${convertPrice(property.price)}/mo). Is it still available?`);
-                  let tgUser = property.contact && property.contact.tg ? property.contact.tg.trim() : '';
+                  let tgUser = '';
+                  if (typeof property.contact === 'string') {
+                    tgUser = property.contact.trim();
+                  } else if (property.contact && property.contact.tg) {
+                    tgUser = property.contact.tg.trim();
+                  }
                   tgUser = tgUser.replace(/^@/, '');
                   if (tgUser) {
                     window.open(`https://t.me/${tgUser}?text=${msg}`, '_blank');
@@ -231,7 +236,15 @@ export default function PropertyModal({ property, onClose, convertPrice, t: tPro
                 }}
                 style={{ backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: 'var(--as-radius-pill)', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
               >
-                {property.contact && property.contact.tg ? 'Telegram' : (property.contact && property.contact.label ? property.contact.label : T('contact'))}
+                {(() => {
+                  let tgUser = '';
+                  if (typeof property.contact === 'string') {
+                    tgUser = property.contact.trim();
+                  } else if (property.contact && property.contact.tg) {
+                    tgUser = property.contact.tg.trim();
+                  }
+                  return tgUser ? 'Telegram' : (property.contact && property.contact.label ? property.contact.label : T('contact'));
+                })()}
               </button>
               {property.contact && property.contact.wa && (
                 <a
