@@ -3,12 +3,12 @@ import MapController from './MapController.jsx';
 import PropertyCard from './PropertyCard.jsx';
 import PropertyModal from './PropertyModal.jsx';
 import SafeImage from './SafeImage.jsx';
-import { defaultIcon } from '../leafletIcon.js';
+import { defaultIcon, activeIcon } from '../leafletIcon.js';
 import { SORT_OPTIONS } from '../data/mockProperties.js';
 import { useFilters } from '../FiltersContext.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResultsPage({
@@ -32,6 +32,7 @@ export default function ResultsPage({
   const [menuOpen, setMenuOpen] = useState(false);
   const [savedSearches, setSavedSearches] = useState([]);
   const [showCards, setShowCards] = useState(false);
+  const [hoveredPropertyId, setHoveredPropertyId] = useState(null);
 
   useEffect(() => {
     try { setSavedSearches(JSON.parse(localStorage.getItem('as_saved_searches') || '[]')); } catch { setSavedSearches([]); }
@@ -138,6 +139,8 @@ export default function ResultsPage({
                     onToggleFavorite={onToggleFavorite}
                     onOpenDetails={onOpenDetails}
                     convertPrice={convertPrice}
+                    onHover={setHoveredPropertyId}
+                    isHovered={hoveredPropertyId === prop.id}
                   />
                 </motion.div>
               ))}
@@ -152,7 +155,15 @@ export default function ResultsPage({
           <MapController coords={mapCenterCoords} />
 
           {sortedProperties.map((prop) => (
-            <Marker key={prop.id} position={[prop.lat, prop.lng]} icon={defaultIcon} eventHandlers={{ click: () => onSelectProperty(prop) }}>
+            <Marker 
+              key={prop.id} 
+              position={[prop.lat, prop.lng]} 
+              icon={hoveredPropertyId === prop.id ? activeIcon : defaultIcon} 
+              eventHandlers={{ 
+                click: () => onSelectProperty(prop),
+                mouseover: () => setHoveredPropertyId(prop.id),
+                mouseout: () => setHoveredPropertyId(null)
+              }}
               <Popup>
                 <div style={{ width: '180px' }}>
                   <SafeImage src={prop.img} alt={prop.title} style={{ width: '100%', height: '95px', objectFit: 'cover', borderRadius: '0.4rem' }} />

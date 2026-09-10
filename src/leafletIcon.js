@@ -1,31 +1,32 @@
 import L from 'leaflet';
 
-// Warm terracotta pin with price label (replaces default Leaflet marker)
+// Teal pin with price label (replaces default Leaflet marker)
 export const defaultIcon = L.divIcon({
   className: 'as-map-pin',
   html: `<div style="
-    background: #D4A373;
+    background: #0D9488;
     border: 3px solid #fff;
     border-radius: 50% 50% 50% 0;
     transform: rotate(-45deg);
     width: 22px; height: 22px;
-    box-shadow: 0 2px 6px rgba(26,26,26,0.25);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
   "></div>`,
   iconSize: [22, 22],
   iconAnchor: [11, 22],
   popupAnchor: [0, -22],
 });
 
-// Larger pin used for the currently selected/hovered property
+// Active/hovered pin (coral, larger, with glow)
 export const activeIcon = L.divIcon({
   className: 'as-map-pin-active',
   html: `<div style="
-    background: #B36A3E;
+    background: #F97316;
     border: 3px solid #fff;
     border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg) scale(1.25);
+    transform: rotate(-45deg) scale(1.3);
     width: 22px; height: 22px;
-    box-shadow: 0 3px 10px rgba(26,26,26,0.35);
+    box-shadow: 0 4px 12px rgba(249,115,22,0.4);
   "></div>`,
   iconSize: [28, 28],
   iconAnchor: [14, 28],

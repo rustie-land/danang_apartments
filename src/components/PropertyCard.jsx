@@ -2,7 +2,7 @@ import SafeImage from './SafeImage.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { useState, useEffect } from 'react';
 
-export default function PropertyCard({ property, isSelected, isFavorite, onSelect, onToggleFavorite, onOpenDetails, convertPrice }) {
+export default function PropertyCard({ property, isSelected, isFavorite, onSelect, onToggleFavorite, onOpenDetails, convertPrice, onHover, isHovered }) {
   const { t } = useLang();
   const [imgIdx, setImgIdx] = useState(0);
   
@@ -17,6 +17,24 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
     }, 1500);
     return () => clearInterval(interval);
   }, [images.length]);
+
+  const handleMouseEnter = (e) => {
+    if (!isSelected) {
+      e.currentTarget.style.boxShadow = 'var(--as-shadow-strong)';
+      e.currentTarget.style.transform = 'translateY(-2px)';
+      e.currentTarget.style.borderColor = 'var(--as-accent)';
+    }
+    if (onHover) onHover(property.id);
+  };
+
+  const handleMouseLeave = (e) => {
+    if (!isSelected) {
+      e.currentTarget.style.boxShadow = 'var(--as-shadow-soft)';
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.borderColor = 'var(--as-border)';
+    }
+    if (onHover) onHover(null);
+  };
 
   return (
     <div
@@ -38,20 +56,8 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
         transition: 'all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
         position: 'relative',
       }}
-      onMouseEnter={(e) => {
-        if (!isSelected) {
-          e.currentTarget.style.boxShadow = 'var(--as-shadow-strong)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-          e.currentTarget.style.borderColor = 'var(--as-accent)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isSelected) {
-          e.currentTarget.style.boxShadow = 'var(--as-shadow-soft)';
-          e.currentTarget.style.transform = 'translateY(0)';
-          e.currentTarget.style.borderColor = 'var(--as-border)';
-        }
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       <SafeImage
         src={images[imgIdx]}
