@@ -55,9 +55,42 @@ if not SUPABASE_URL or 'your-project' in SUPABASE_URL:
 if not SUPABASE_KEY:
     raise ValueError("❌ Missing SUPABASE_KEY")
 
-# Da Nang bounding box
-DA_NANG_BOX = {'lat_min': 15.8, 'lat_max': 16.2, 'lon_min': 108.0, 'lon_max': 108.4}
+DA_NANG_BOX = {'lat_min': 15.9000, 'lat_max': 16.1500, 'lon_min': 108.0500, 'lon_max': 108.3500}
 DA_NANG_CENTER = (16.0544, 108.2400)
+
+DA_NANG_STREET_WHITELIST = [
+    'an thượng', 'an thuong', 'mỹ khê', 'my khe', 'trần hưng đạo', 'tran hung dao',
+    'nguyễn văn thoại', 'nguyen van thoai', 'bãi bắc', 'bai bac', 'marble mountains',
+    'han river bridge', 'ngô quyền', 'ngo quyen', 'lê duẩn', 'le duan', 'hùng vương',
+    'hung vuong', 'phan châu trinh', 'phan chau trinh', 'hoàng diệu', 'hoang dieu',
+    'bạch đằng', 'bach dang', 'phan thiết', 'phan thiet', 'võ nguyên giáp',
+    'vo nguyen giap', 'ngũ hành sơn', 'ngu hanh son', 'hòa hải', 'hoa hai',
+    'hòa quý', 'hoa quy', 'trần phú', 'tran phú', 'bãi dài', 'bai dài',
+    'bãi rèn', 'bai ren', 'thọ quang', 'tho quang', 'phước mỹ', 'phuoc my',
+    'đường 2/9', 'duong 2/9', 'cầu rồng', 'cau rong', 'cầu sông hàn',
+    'cau song han', 'hòa cường', 'hoa cuong', 'thạch thang', 'thach thang',
+    'võ thị thừa', 'vo thi thua', 'điện biên phủ', 'dien bien phu',
+    'phan đình phùng', 'phan dinh phung', 'trường sa', 'truong sa',
+    'hồng bàng', 'hong bang', 'hoà khê', 'hoa khe', 'tân chánh',
+    'tan chanh', 'hòa minh', 'hoa minh', 'bình hiên', 'binh hien',
+    'bình thuận', 'binh thuan', 'hòa thọ đông', 'hoa tho dong',
+    'hòa thọ tây', 'hoa tho tay', 'hòa phát', 'hoa phat',
+    'hòa xuân', 'hoa xuan', 'hòa kiếm', 'hoa kiem', 'khê mỹ',
+    'khe my', 'kim sơn', 'kim son', 'lộc thọ', 'loc tho',
+    'nam dương', 'nam duong', 'ngô mây', 'ngo may', 'phước ninh',
+    'phuoc ninh', 'quảng nam', 'quang nam', 'sơn trà', 'son tra',
+    'thanh khê', 'thanh khe', 'thọ xuân', 'tho xuan', 'trần cao',
+    'tran cao', 'trần nam phú', 'tran nam phu', 'tam thuật',
+    'thạch bình', 'thach binh', 'thái phiên', 'thai phien',
+    'thăng long', 'thang long', 'thanh lợi', 'thanh loi',
+    'thọ quan', 'tho quan', 'thuận phước', 'thuan phuoc',
+    'tiên sa', 'tien sa', 'trần hạnh', 'tran hanh', 'trần thị vĩnh',
+    'tran thi vinh', 'trung hòa', 'trung hoa', 'trường chinh',
+    'truong chinh', 'vạn xuân', 'van xuan', 'viết nam', 'viet nam',
+    'vĩnh trung', 'vinh trung', 'vĩnh phước', 'vinh phuoc',
+    'xương huân', 'xuong huan', 'thạch thang', 'thach thang',
+    'yên bái', 'yen bai', 'phú ninh', 'phu ninh',
+]
 
 # Exchange rates
 USD_TO_VND = 25400.0
@@ -118,48 +151,23 @@ async def expand_google_maps_url(url: str) -> Optional[Tuple[float, float]]:
 # ─── 2. Optimized Photon geocoding ───────────────────────────────────────────
 
 async def geocode_address_async(raw_address: str | None, text: str = '', city: str = 'Da Nang') -> Optional[Tuple[float, float]]:
-    """Geocode via Photon with city center bias and bbox filter."""
+    """Geocode via Photon with Da Nang center bias and HARD bbox filter."""
     query = (raw_address or '').strip()
     if not query:
         return None
     
-    # Determine city center for geocoding
-    city_centers = {
-        'Da Nang': (16.0544, 108.2400),
-        'Pattaya': (12.9236, 100.8823),
-        'Phuket': (7.8804, 98.3923),
-        'Bangkok': (13.7563, 100.5018),
-        'Hua Hin': (12.5684, 99.9591),
-    }
-    center = city_centers.get(city, DA_NANG_CENTER)
+    # Fuzzy street name normalization
+    if query:
+        query = normalize_street_name(query)
     
-    # If no street in query, try to extract district/area from text
-    if not query or len(query) < 5:
-        # Try to find area keywords in text
-        area_keywords = {
-            'my an': 'My An, Da Nang',
-            'my khe': 'My Khe, Da Nang',
-            'son tra': 'Son Tra, Da Nang',
-            'ngu hanh son': 'Ngu Hanh Son, Da Nang',
-            'hai chau': 'Hai Chau, Da Nang',
-            'an thuong': 'An Thuong, Da Nang',
-            'khuê mỹ': 'Khue My, Da Nang',
-            'phước mỹ': 'Phuoc My, Da Nang',
-        }
-        for keyword, area in area_keywords.items():
-            if keyword in text.lower():
-                query = area
-                break
-    
-    # Always anchor to Vietnam
-    if 'vietnam' not in query.lower() and 'việt' not in query.lower():
-        query = f"{query}, Vietnam"
+    # Always anchor to Da Nang, Vietnam
+    query = f"{query}, Da Nang, Vietnam"
     
     params = {
         'q': query,
-        'limit': 3,  # Get multiple results
-        'lat': center[0],
-        'lon': center[1],
+        'limit': 3,
+        'lat': DA_NANG_CENTER[0],
+        'lon': DA_NANG_CENTER[1],
     }
     url = "https://photon.komoot.io/api/"
     headers = {"User-Agent": "AsiaStaysBot/1.0 (danang-apartments; savvin.rg@gmail.com)"}
@@ -169,17 +177,14 @@ async def geocode_address_async(raw_address: str | None, text: str = '', city: s
             resp = await c.get(url, params=params, headers=headers)
             data = resp.json()
         if data.get('features'):
-            # Try each result until one is in bbox
             for feature in data['features']:
                 coords = feature['geometry']['coordinates']
                 lat, lng = round(coords[1], 6), round(coords[0], 6)
                 if is_in_da_nang_bbox(lat, lng):
                     return (lat, lng)
-            # If none in bbox, return first result with warning
-            coords = data['features'][0]['geometry']['coordinates']
-            lat, lng = round(coords[1], 6), round(coords[0], 6)
-            print(f"    ⚠️ Geocode out of Da Nang bbox: {query[:50]} -> ({lat},{lng})")
-            return (lat, lng)
+            # HARD BBOX FILTER: out-of-bbox = no coordinates
+            print(f"    ⚠️ Geocode out of Da Nang bbox: {query[:50]} -> resetting lat/lon to NULL")
+            return None
     except Exception as e:
         print(f"    ⚠️ Geocode failed ({e}): {query[:50]}")
     return None
@@ -188,6 +193,54 @@ def is_in_da_nang_bbox(lat: float, lng: float) -> bool:
     """Check if coordinates fall within Da Nang bounding box."""
     return (DA_NANG_BOX['lat_min'] <= lat <= DA_NANG_BOX['lat_max'] and
             DA_NANG_BOX['lon_min'] <= lng <= DA_NANG_BOX['lon_max'])
+
+
+def normalize_street_name(name: str) -> str:
+    """Fuzzy match street name against Da Nang whitelist."""
+    name_lower = name.lower().strip()
+    # Remove common prefixes
+    name_clean = re.sub(r'^(đường|duong|street|st\.?|đường)\s+', '', name_lower)
+    
+    # Exact match first
+    if name_clean in DA_NANG_STREET_WHITELIST:
+        return name_clean
+    
+    # Fuzzy match using Levenshtein distance
+    best_match = None
+    best_distance = float('inf')
+    
+    for street in DA_NANG_STREET_WHITELIST:
+        distance = levenshtein_distance(name_clean, street)
+        if distance < best_distance:
+            best_distance = distance
+            best_match = street
+    
+    # Only return match if distance is reasonable (< 40% of string length)
+    if best_match and best_distance < len(name_clean) * 0.4:
+        return best_match
+    
+    return name_clean
+
+
+def levenshtein_distance(s1: str, s2: str) -> int:
+    """Calculate Levenshtein distance between two strings."""
+    if len(s1) < len(s2):
+        return levenshtein_distance(s2, s1)
+    
+    if len(s2) == 0:
+        return len(s1)
+    
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+    
+    return previous_row[-1]
 
 
 # ─── 3. Media filtering ──────────────────────────────────────────────────────

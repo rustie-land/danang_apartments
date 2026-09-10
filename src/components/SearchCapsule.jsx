@@ -4,6 +4,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const AMENITY_OPTS = ['#pool', '#ac', '#balcony', '#gym', '#pet', '#kitchen', '#sea', '#beach'];
 
+function formatPrice(price) {
+  if (!price) return 'Any';
+  const num = Number(price);
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
+  }
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(0)}K`;
+  }
+  return num.toString();
+}
+
 export default function SearchCapsule({ onSearch }) {
   const {
     bedrooms, setBedrooms,
@@ -115,14 +127,58 @@ export default function SearchCapsule({ onSearch }) {
                   <option value="2 Beds">2 rooms</option>
                   <option value="3+ Beds">3+</option>
                 </select>
-                <div className="as-hist">
-                  <span style={{ height: '30%' }}></span><span style={{ height: '55%' }}></span>
-                  <span style={{ height: '70%' }} className="hot"></span><span style={{ height: '90%' }} className="hot"></span>
-                  <span style={{ height: '60%' }}></span><span style={{ height: '40%' }}></span><span style={{ height: '25%' }}></span>
+                <div style={{ marginTop: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--as-text-muted)' }}>Price range</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--as-accent)' }}>{formatPrice(minPrice)} – {formatPrice(maxPrice)}</span>
+                  </div>
+                  <div style={{ position: 'relative', height: '32px' }}>
+                    <input
+                      type="range"
+                      min="2000000"
+                      max="60000000"
+                      step="200000"
+                      value={minPrice || 8000000}
+                      onChange={(e) => {
+                        const val = Math.min(Number(e.target.value), maxPrice - 200000);
+                        setMinPrice(val);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        width: '100%',
+                        height: '4px',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        WebkitAppearance: 'none',
+                        appearance: 'none',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                      }}
+                    />
+                    <input
+                      type="range"
+                      min="2000000"
+                      max="60000000"
+                      step="200000"
+                      value={maxPrice || 25000000}
+                      onChange={(e) => {
+                        const val = Math.max(Number(e.target.value), minPrice + 200000);
+                        setMaxPrice(val);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        width: '100%',
+                        height: '4px',
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        WebkitAppearance: 'none',
+                        appearance: 'none',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="as-zoom-hint">8M – 25M VND / mo · drag to adjust</div>
-                <input type="number" placeholder="Min" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} onInput={(e) => setMinPrice(e.target.value)} onClick={(e) => e.stopPropagation()} style={{ width: '45%', display: 'inline-block', marginRight: '5%' }} />
-                <input type="number" placeholder="Max" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} onInput={(e) => setMaxPrice(e.target.value)} onClick={(e) => e.stopPropagation()} style={{ width: '45%', display: 'inline-block' }} />
               </motion.div>
             )}
           </AnimatePresence>

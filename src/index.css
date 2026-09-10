@@ -328,6 +328,42 @@ img {
 .as-hist { display: flex; align-items: flex-end; gap: 3px; height: 60px; margin: 0.75rem 0; }
 .as-hist span { flex: 1; background: var(--as-surface-alt); border-radius: 3px; }
 .as-hist span.hot { background: var(--as-accent); }
+
+/* Range slider styles */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--as-accent);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  position: relative;
+  z-index: 2;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--as-accent);
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  position: relative;
+  z-index: 2;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--as-border);
+  border-radius: 2px;
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  background: var(--as-border);
+  border-radius: 2px;
+}
 .as-zoom-hint { font-size: 0.7rem; color: var(--as-accent-2); }
 
 /* Quick filters ribbon */
