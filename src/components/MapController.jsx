@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import L from 'leaflet';
+import 'leaflet.markercluster';
 import { useMap } from 'react-leaflet';
 
 export default function MapController({ coords, mobileView }) {
@@ -12,7 +14,6 @@ export default function MapController({ coords, mobileView }) {
 
   // Fix map size when mobile view changes (list ↔ map toggle)
   useEffect(() => {
-    // Defer so layout has settled after the toggle
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 300);

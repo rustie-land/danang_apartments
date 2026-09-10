@@ -1,14 +1,16 @@
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import MapController from './MapController.jsx';
 import PropertyCard from './PropertyCard.jsx';
 import PropertyModal from './PropertyModal.jsx';
-import SafeImage from './SafeImage.jsx';
+import MarkerClusterGroup from './MarkerClusterGroup.jsx';
 import { defaultIcon, activeIcon } from '../leafletIcon.js';
 import { SORT_OPTIONS } from '../data/mockProperties.js';
 import { useFilters } from '../FiltersContext.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResultsPage({
@@ -170,27 +172,13 @@ export default function ResultsPage({
           />
           <MapController coords={mapCenterCoords} mobileView={mobileView} />
 
-          {sortedProperties.map((prop) => (
-            <Marker 
-              key={prop.id} 
-              position={[prop.lat, prop.lng]} 
-              icon={hoveredPropertyId === prop.id ? activeIcon : defaultIcon} 
-              eventHandlers={{ 
-                click: () => onSelectProperty(prop),
-                mouseover: () => setHoveredPropertyId(prop.id),
-                mouseout: () => setHoveredPropertyId(null)
-              }}
-            >
-              <Popup>
-                <div style={{ width: '180px' }}>
-                  <SafeImage src={prop.img} alt={prop.title} style={{ width: '100%', height: '95px', objectFit: 'cover', borderRadius: '0.4rem' }} />
-                  <h4 style={{ margin: '0.4rem 0 0.1rem 0', fontSize: '0.85rem', color: 'var(--as-text)' }}>{prop.title}</h4>
-                  <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', fontWeight: 700, color: 'var(--as-accent)' }}>{convertPrice(prop.price)}</p>
-                  <button onClick={() => onOpenDetails(prop)} style={{ width: '100%', backgroundColor: 'var(--as-accent)', color: '#fff', border: 'none', padding: '0.3rem', borderRadius: '0.3rem', fontSize: '0.7rem', cursor: 'pointer' }}>{t('details')}</button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          <MarkerClusterGroup
+            markers={sortedProperties.filter(p => p.lat && p.lng)}
+            onMarkerClick={onSelectProperty}
+            hoveredId={hoveredPropertyId}
+            activeIcon={activeIcon}
+            defaultIcon={defaultIcon}
+          />
         </MapContainer>
       </div>
 
