@@ -79,6 +79,7 @@ function AppRoutes() {
   const [activeModalProperty, setActiveModalProperty] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const [mobileView, setMobileView] = useState('list');
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 900;
 
   useEffect(() => {
     async function fetchProperties() {

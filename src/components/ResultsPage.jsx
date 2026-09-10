@@ -8,7 +8,7 @@ import { SORT_OPTIONS } from '../data/mockProperties.js';
 import { useFilters } from '../FiltersContext.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResultsPage({
@@ -90,13 +90,7 @@ export default function ResultsPage({
       <div className={`results-list-pane${mobileView === 'map' ? ' mobile-only-hidden' : ''}`}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.8rem', color: 'var(--as-text)', margin: 0 }}>{t('results')}</h2>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--as-text-muted)' }}>{sortedProperties.length} {t('objectsInZone')}</span>
-            <div className="mobile-toggle" style={{ display: 'none', gap: '0.4rem', backgroundColor: 'var(--as-surface)', borderRadius: '0.6rem', padding: '0.2rem', border: '1px solid var(--as-border)' }}>
-              <button onClick={() => setMobileView('list')} style={{ border: 'none', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: mobileView === 'list' ? 'var(--as-accent)' : 'transparent', color: mobileView === 'list' ? '#fff' : 'var(--as-text)' }}>{t('list')}</button>
-              <button onClick={() => setMobileView('map')} style={{ border: 'none', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: mobileView === 'map' ? 'var(--as-accent)' : 'transparent', color: mobileView === 'map' ? '#fff' : 'var(--as-text)' }}>{t('map')}</button>
-            </div>
-          </div>
+          <span style={{ fontSize: '0.85rem', color: 'var(--as-text-muted)' }}>{sortedProperties.length} {t('objectsInZone')}</span>
         </div>
 
         {sortedProperties.length === 0 ? (
@@ -164,6 +158,11 @@ export default function ResultsPage({
       </div>
 
       <div className={`results-map-pane${mobileView === 'list' ? ' mobile-only-hidden' : ''}`}>
+        {mobileView === 'map' && (
+          <button onClick={() => setMobileView('list')} style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 500, border: 'none', borderRadius: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', backgroundColor: '#fff', color: 'var(--as-text)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            ← List
+          </button>
+        )}
         <MapContainer center={initialCenter} zoom={initialZoom} style={{ height: '100%', width: '100%' }}>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <MapController coords={mapCenterCoords} mobileView={mobileView} />
