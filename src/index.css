@@ -167,6 +167,7 @@ img {
     flex-direction: column;
     height: auto;
     overflow: visible;
+    position: relative;
   }
   .results-list-pane,
   .results-map-pane {
@@ -185,13 +186,24 @@ img {
   .mobile-toggle {
     display: flex !important;
   }
-  /* Hide the inactive pane on mobile (keep both on desktop) */
-  .mobile-only-hidden {
-    display: none !important;
+  /* When showing list on mobile, visually collapse map pane (but keep it rendered) */
+  .results-split--show-list .results-map-pane {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+    height: 380px;
   }
-  /* When map is the active mobile view, let it fill the screen */
-  .results-split:has(.results-map-pane:not(.mobile-only-hidden)) .results-map-pane {
+  /* When showing map on mobile, expand it to full screen */
+  .results-split--show-map .results-map-pane {
     height: calc(100vh - var(--navbar-h));
+    position: relative;
+    left: auto;
+    top: auto;
+  }
+  .results-split--show-map .results-list-pane {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
   }
   /* Mobile burger menu */
   .mobile-burger {

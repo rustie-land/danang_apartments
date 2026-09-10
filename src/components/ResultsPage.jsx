@@ -86,8 +86,8 @@ export default function ResultsPage({
   }
 
   return (
-    <div className="results-split">
-      <div className={`results-list-pane${mobileView === 'map' ? ' mobile-only-hidden' : ''}`}>
+    <div className={`results-split${mobileView === 'map' ? ' results-split--show-map' : ''}${mobileView === 'list' ? ' results-split--show-list' : ''}`}>
+      <div className="results-list-pane">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.8rem', color: 'var(--as-text)', margin: 0 }}>{t('results')}</h2>
           <span style={{ fontSize: '0.85rem', color: 'var(--as-text-muted)' }}>{sortedProperties.length} {t('objectsInZone')}</span>
@@ -157,7 +157,7 @@ export default function ResultsPage({
         )}
       </div>
 
-      <div className={`results-map-pane${mobileView === 'list' ? ' mobile-only-hidden' : ''}`}>
+      <div className="results-map-pane">
         {mobileView === 'map' && (
           <button onClick={() => setMobileView('list')} style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 500, border: 'none', borderRadius: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', backgroundColor: '#fff', color: 'var(--as-text)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             ← List
