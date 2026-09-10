@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 
-export default function MapController({ coords }) {
+export default function MapController({ coords, mobileView }) {
   const map = useMap();
 
   useEffect(() => {
@@ -10,12 +10,20 @@ export default function MapController({ coords }) {
     }
   }, [coords, map]);
 
+  // Fix map size when mobile view changes (list ↔ map toggle)
+  useEffect(() => {
+    // Defer so layout has settled after the toggle
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [mobileView, map]);
+
   // Leaflet caches the container size; when the map pane is shown/hidden
   // (e.g. mobile list/map toggle) or the viewport rotates, the tiles render
   // with wrong bounds. Force a recalculation whenever the pane becomes visible.
   useEffect(() => {
     const fixSize = () => map.invalidateSize();
-    // Defer so layout has settled after the toggle/render.
     const t = setTimeout(fixSize, 200);
     window.addEventListener('resize', fixSize);
     window.addEventListener('orientationchange', fixSize);

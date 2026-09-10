@@ -154,6 +154,7 @@ export default function ResultsPage({
                     convertPrice={convertPrice}
                     onHover={setHoveredPropertyId}
                     isHovered={hoveredPropertyId === prop.id}
+                    onSwitchToMap={() => setMobileView('map')}
                   />
                 </motion.div>
               ))}
@@ -165,7 +166,7 @@ export default function ResultsPage({
       <div className={`results-map-pane${mobileView === 'list' ? ' mobile-only-hidden' : ''}`}>
         <MapContainer center={initialCenter} zoom={initialZoom} style={{ height: '100%', width: '100%' }}>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <MapController coords={mapCenterCoords} />
+          <MapController coords={mapCenterCoords} mobileView={mobileView} />
 
           {sortedProperties.map((prop) => (
             <Marker 

@@ -2,7 +2,7 @@ import SafeImage from './SafeImage.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { useState, useEffect } from 'react';
 
-export default function PropertyCard({ property, isSelected, isFavorite, onSelect, onToggleFavorite, onOpenDetails, convertPrice, onHover, isHovered }) {
+export default function PropertyCard({ property, isSelected, isFavorite, onSelect, onToggleFavorite, onOpenDetails, convertPrice, onHover, isHovered, onSwitchToMap }) {
   const { t } = useLang();
   const [imgIdx, setImgIdx] = useState(0);
   
@@ -147,12 +147,9 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
               onClick={(e) => {
                 e.stopPropagation();
                 onSelect(property);
-                if (window.innerWidth < 900) {
-                  const mapPane = document.querySelector('.results-map-pane');
-                  if (mapPane && mapPane.classList.contains('mobile-only-hidden')) {
-                    const event = new CustomEvent('switchToMap');
-                    window.dispatchEvent(event);
-                  }
+                // On mobile, auto-switch to map view
+                if (onSwitchToMap && window.innerWidth < 900) {
+                  onSwitchToMap();
                 }
               }}
               style={{

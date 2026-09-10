@@ -183,11 +183,38 @@ img {
   }
   /* Mobile list/map toggle */
   .mobile-toggle {
-    display: flex !important;
+    display: none;
   }
   /* Hide the inactive pane on mobile (keep both on desktop) */
   .mobile-only-hidden {
-    display: none !important;
+    display: block;
+  }
+
+  @media (max-width: 900px) {
+    .results-split {
+      flex-direction: column;
+      height: auto;
+      overflow: visible;
+    }
+    .results-list-pane,
+    .results-map-pane {
+      width: 100%;
+    }
+    .results-map-pane {
+      height: 380px;
+    }
+    /* Mobile list/map toggle */
+    .mobile-toggle {
+      display: flex !important;
+    }
+    /* Hide the inactive pane on mobile (keep both on desktop) */
+    .mobile-only-hidden {
+      display: none !important;
+    }
+    /* When map is the active mobile view, let it fill the screen */
+    .results-split:has(.results-map-pane:not(.mobile-only-hidden)) .results-map-pane {
+      height: calc(100vh - var(--navbar-h));
+    }
   }
   /* When map is the active mobile view, let it fill the screen */
   .results-split:has(.results-map-pane:not(.mobile-only-hidden)) .results-map-pane {
