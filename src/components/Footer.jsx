@@ -5,7 +5,7 @@ export default function Footer() {
     <footer style={{ backgroundColor: 'var(--as-text)', color: '#EDE8DF', padding: '3rem 1.5rem 2rem', marginTop: '4rem', fontSize: '0.9rem' }}>
       <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
         <div>
-          <div style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.5rem', fontWeight: 700, color: '#fff', marginBottom: '0.75rem' }}>Asia Stays</div>
+          <div style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--as-accent)', marginBottom: '0.75rem' }}>Asia Stays</div>
           <p style={{ color: '#cfc7ba', lineHeight: 1.6 }}>Long-term rentals across Asia. Direct from owners, no agencies, no fees.</p>
         </div>
 

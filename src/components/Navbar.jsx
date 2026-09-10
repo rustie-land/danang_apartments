@@ -217,7 +217,7 @@ export default function Navbar() {
         position: 'sticky',
         top: 0,
         zIndex: 1000,
-        backgroundColor: 'rgba(245,240,232,0.82)',           /* beige #F5F0E8 */
+        backgroundColor: 'rgba(248,250,252,0.85)',           /* cool white #F8FAFC */
         backdropFilter: 'blur(14px)',
         WebkitBackdropFilter: 'blur(14px)',
         borderBottom: '1px solid var(--as-border)',
@@ -226,7 +226,7 @@ export default function Navbar() {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap', padding: '0.7rem 1.5rem', position: 'relative' }}>
-        <Link to="/" style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--as-text)', textDecoration: 'none', cursor: 'pointer', flexShrink: 0 }}>
+        <Link to="/" style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--as-accent)', textDecoration: 'none', cursor: 'pointer', flexShrink: 0 }}>
           {t('brand')}
         </Link>
 

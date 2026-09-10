@@ -246,7 +246,7 @@ img {
   --as-radius-drop: 20px;
   
   /* Typography */
-  --as-font-serif: 'Inter', system-ui, sans-serif;
+  --as-font-serif: 'Outfit', 'Inter', system-ui, sans-serif;
   --as-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --as-font-ui: 'Inter', system-ui, sans-serif;
   

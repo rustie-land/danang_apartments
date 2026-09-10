@@ -151,7 +151,7 @@ export default function ResultsPage({
 
       <div className={`results-map-pane${mobileView === 'list' ? ' mobile-only-hidden' : ''}`}>
         <MapContainer center={initialCenter} zoom={initialZoom} style={{ height: '100%', width: '100%' }}>
-          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>' url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <MapController coords={mapCenterCoords} />
 
           {sortedProperties.map((prop) => (
@@ -164,6 +164,7 @@ export default function ResultsPage({
                 mouseover: () => setHoveredPropertyId(prop.id),
                 mouseout: () => setHoveredPropertyId(null)
               }}
+            >
               <Popup>
                 <div style={{ width: '180px' }}>
                   <SafeImage src={prop.img} alt={prop.title} style={{ width: '100%', height: '95px', objectFit: 'cover', borderRadius: '0.4rem' }} />
