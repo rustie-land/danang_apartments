@@ -14,17 +14,29 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
       style={{
         display: 'flex',
         gap: '1rem',
-        backgroundColor: isSelected ? 'var(--as-surface)' : '#fff',
+        backgroundColor: isSelected ? 'var(--as-surface)' : 'var(--as-surface)',
         borderRadius: 'var(--as-radius-card)',
         overflow: 'hidden',
         border: isSelected ? '2px solid var(--as-accent)' : '1px solid var(--as-border)',
-        boxShadow: isSelected ? 'var(--as-shadow-soft)' : '0 2px 8px rgba(26,26,26,0.03)',
+        boxShadow: isSelected ? 'var(--as-shadow-float)' : 'var(--as-shadow-soft)',
         cursor: 'pointer',
-        transition: 'all 0.25s ease',
-        position: 'relative'
+        transition: 'all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+        position: 'relative',
       }}
-      onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.boxShadow = '0 8px 24px rgba(26,26,26,0.08)'; }}
-      onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.boxShadow = '0 2px 8px rgba(26,26,26,0.03)'; }}
+      onMouseEnter={(e) => {
+        if (!isSelected) {
+          e.currentTarget.style.boxShadow = 'var(--as-shadow-strong)';
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.borderColor = 'var(--as-accent)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isSelected) {
+          e.currentTarget.style.boxShadow = 'var(--as-shadow-soft)';
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.borderColor = 'var(--as-border)';
+        }
+      }}
     >
       <SafeImage
         src={property.img}

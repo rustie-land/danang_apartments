@@ -217,24 +217,43 @@ img {
   }
 }
 
-/* ============ ASIA STAYS REDESIGN v4 (Warm & Experiential Minimalist) ============ */
+/* ============ ASIA STAYS v5 (Tech Tropical Minimalist 2026) ============ */
 :root {
-  --as-bg: #F5F0E8;
-  --as-surface: #F5F0E8;
-  --as-surface-alt: #E8DCC8;
-  --as-text: #1A1A1A;
-  --as-text-muted: #6B6358;
-  --as-accent: #D4A373;          /* terracotta (per Warm & Experiential Minimalist guide) */
-  --as-accent-hover: #B36A3E;
-  --as-accent-2: #7A7A52;       /* olive */
-  --as-border: #E5E0D8;
+  /* === TECH TROPICAL PALETTE === */
+  --as-bg: #F8FAFC;
+  --as-surface: #FFFFFF;
+  --as-surface-alt: #F1F5F9;
+  --as-border: #E2E8F0;
+  --as-border-strong: #CBD5E1;
+  
+  /* Primary: Ocean Teal */
+  --as-accent: #0D9488;
+  --as-accent-hover: #0F766E;
+  --as-accent-light: #CCFBF1;
+  
+  /* Secondary: Tropical Coral */
+  --as-accent-2: #F97316;
+  --as-accent-2-hover: #EA580C;
+  --as-accent-2-light: #FED7AA;
+  
+  /* Text */
+  --as-text: #0F172A;
+  --as-text-muted: #64748B;
+  
+  /* Radius */
   --as-radius-pill: 9999px;
   --as-radius-card: 16px;
   --as-radius-drop: 20px;
-  --as-shadow-float: 0 8px 30px rgba(26,26,26,0.10);
-  --as-shadow-soft: 0 2px 12px rgba(26,26,26,0.04);
-  --as-font-serif: 'Cormorant Garamond', Georgia, serif;
-  --as-font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Typography */
+  --as-font-serif: 'Inter', system-ui, sans-serif;
+  --as-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --as-font-ui: 'Inter', system-ui, sans-serif;
+  
+  /* Shadows */
+  --as-shadow-soft: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+  --as-shadow-strong: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  --as-shadow-float: 0 8px 30px rgba(13, 148, 136, 0.15);
 }
 
 /* Floating capsule search */
