@@ -9,6 +9,7 @@ import { useFilters } from '../FiltersContext.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ResultsPage({
   initialCenter,
@@ -123,22 +124,54 @@ export default function ResultsPage({
           </div>
 
           {sorted.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-muted)' }}>{t('noResults')}</div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-muted)' }}
+            >
+              {t('noResults')}
+            </motion.div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {sorted.map((prop) => (
-                <PropertyCard
-                  key={prop.id}
-                  property={prop}
-                  isSelected={selectedPropertyId === prop.id}
-                  isFavorite={favorites.includes(prop.id)}
-                  onSelect={onSelectProperty}
-                  onToggleFavorite={onToggleFavorite}
-                  onOpenDetails={onOpenDetails}
-                  convertPrice={convertPrice}
-                />
-              ))}
-            </div>
+            <motion.div
+              variants={{
+                hidden: { opacity: 0 },
+                show: {
+                  opacity: 1,
+                  transition: { staggerChildren: 0.08, delayChildren: 0.1 }
+                }
+              }}
+              initial="hidden"
+              animate="show"
+              style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
+            >
+              <AnimatePresence>
+                {sorted.map((prop) => (
+                  <motion.div
+                    key={prop.id}
+                    variants={{
+                      hidden: { opacity: 0, y: 30, scale: 0.95 },
+                      show: {
+                        opacity: 1,
+                        y: 0,
+                        scale: 1,
+                        transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }
+                      }
+                    }}
+                    layout
+                  >
+                    <PropertyCard
+                      property={prop}
+                      isSelected={selectedPropertyId === prop.id}
+                      isFavorite={favorites.includes(prop.id)}
+                      onSelect={onSelectProperty}
+                      onToggleFavorite={onToggleFavorite}
+                      onOpenDetails={onOpenDetails}
+                      convertPrice={convertPrice}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
         </div>
 
