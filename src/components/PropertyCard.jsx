@@ -147,6 +147,13 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
               onClick={(e) => {
                 e.stopPropagation();
                 onSelect(property);
+                if (window.innerWidth < 900) {
+                  const mapPane = document.querySelector('.results-map-pane');
+                  if (mapPane && mapPane.classList.contains('mobile-only-hidden')) {
+                    const event = new CustomEvent('switchToMap');
+                    window.dispatchEvent(event);
+                  }
+                }
               }}
               style={{
                 backgroundColor: 'var(--as-accent)',

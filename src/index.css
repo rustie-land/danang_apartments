@@ -187,7 +187,7 @@ img {
   }
   /* Hide the inactive pane on mobile (keep both on desktop) */
   .mobile-only-hidden {
-    display: none;
+    display: none !important;
   }
   /* When map is the active mobile view, let it fill the screen */
   .results-split:has(.results-map-pane:not(.mobile-only-hidden)) .results-map-pane {

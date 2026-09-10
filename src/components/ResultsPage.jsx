@@ -40,6 +40,13 @@ export default function ResultsPage({
     return () => clearTimeout(timer);
   }, []);
 
+  // Listen for "switch to map" event from card "On map" button
+  useEffect(() => {
+    const handleSwitchToMap = () => setMobileView('map');
+    window.addEventListener('switchToMap', handleSwitchToMap);
+    return () => window.removeEventListener('switchToMap', handleSwitchToMap);
+  }, []);
+
   const saveSearch = () => {
     try {
       const saved = JSON.parse(localStorage.getItem('as_saved_searches') || '[]');
@@ -83,7 +90,13 @@ export default function ResultsPage({
       <div className={`results-list-pane${mobileView === 'map' ? ' mobile-only-hidden' : ''}`}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h2 style={{ fontFamily: 'var(--as-font-serif)', fontSize: '1.8rem', color: 'var(--as-text)', margin: 0 }}>{t('results')}</h2>
-          <span style={{ fontSize: '0.85rem', color: 'var(--as-text-muted)' }}>{sortedProperties.length} {t('objectsInZone')}</span>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--as-text-muted)' }}>{sortedProperties.length} {t('objectsInZone')}</span>
+            <div className="mobile-toggle" style={{ display: 'none', gap: '0.4rem', backgroundColor: 'var(--as-surface)', borderRadius: '0.6rem', padding: '0.2rem', border: '1px solid var(--as-border)' }}>
+              <button onClick={() => setMobileView('list')} style={{ border: 'none', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: mobileView === 'list' ? 'var(--as-accent)' : 'transparent', color: mobileView === 'list' ? '#fff' : 'var(--as-text)' }}>{t('list')}</button>
+              <button onClick={() => setMobileView('map')} style={{ border: 'none', borderRadius: '0.4rem', padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', backgroundColor: mobileView === 'map' ? 'var(--as-accent)' : 'transparent', color: mobileView === 'map' ? '#fff' : 'var(--as-text)' }}>{t('map')}</button>
+            </div>
+          </div>
         </div>
 
         {sortedProperties.length === 0 ? (
