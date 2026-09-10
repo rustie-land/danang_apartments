@@ -1,8 +1,23 @@
 import SafeImage from './SafeImage.jsx';
 import { useLang } from '../LanguageContext.jsx';
+import { useState, useEffect } from 'react';
 
 export default function PropertyCard({ property, isSelected, isFavorite, onSelect, onToggleFavorite, onOpenDetails, convertPrice }) {
   const { t } = useLang();
+  const [imgIdx, setImgIdx] = useState(0);
+  
+  const images = property.imageUrls && property.imageUrls.length > 0 
+    ? property.imageUrls 
+    : [property.img];
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const interval = setInterval(() => {
+      setImgIdx(i => (i + 1) % images.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [images.length]);
+
   return (
     <div
       onClick={() => onOpenDetails(property)}
@@ -39,10 +54,39 @@ export default function PropertyCard({ property, isSelected, isFavorite, onSelec
       }}
     >
       <SafeImage
-        src={property.img}
+        src={images[imgIdx]}
         alt={`${property.title} — ${property.type || 'apartment'} in ${property.area || 'Asia'}${property.beds ? `, ${property.beds}` : ''}`}
-        style={{ width: '140px', height: '140px', objectFit: 'cover', flexShrink: 0 }}
+        style={{ 
+          width: '140px', 
+          height: '140px', 
+          objectFit: 'cover', 
+          flexShrink: 0,
+          transition: 'opacity 0.3s ease'
+        }}
       />
+      
+      {images.length > 1 && (
+        <div style={{
+          position: 'absolute',
+          bottom: '0.5rem',
+          left: '0.5rem',
+          display: 'flex',
+          gap: '4px',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          borderRadius: '10px',
+          padding: '3px 6px'
+        }}>
+          {images.map((_, idx) => (
+            <div key={idx} style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: idx === imgIdx ? '#fff' : 'rgba(255,255,255,0.4)',
+              transition: 'background-color 0.3s ease'
+            }} />
+          ))}
+        </div>
+      )}
 
       <button
         onClick={(e) => {
