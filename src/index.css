@@ -115,6 +115,11 @@ img {
   }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .results-split {
   display: flex;
   height: calc(100vh - var(--navbar-h));

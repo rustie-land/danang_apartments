@@ -1,17 +1,13 @@
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import MapController from './MapController.jsx';
 import PropertyCard from './PropertyCard.jsx';
 import PropertyModal from './PropertyModal.jsx';
-import MarkerClusterGroup from './MarkerClusterGroup.jsx';
-import { defaultIcon, activeIcon } from '../leafletIcon.js';
 import { SORT_OPTIONS } from '../data/mockProperties.js';
 import { useFilters } from '../FiltersContext.jsx';
 import { useLang } from '../LanguageContext.jsx';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const InteractiveMap = lazy(() => import('./InteractiveMap.jsx'));
 
 export default function ResultsPage({
   initialCenter,
@@ -165,21 +161,21 @@ export default function ResultsPage({
             ← List
           </button>
         )}
-        <MapContainer center={initialCenter} zoom={initialZoom} style={{ height: '100%', width: '100%' }}>
-          <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        <Suspense fallback={
+          <div style={{ height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--as-surface)' }}>
+            <div style={{ width: '40px', height: '40px', border: '3px solid var(--as-border)', borderTopColor: 'var(--as-accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          </div>
+        }>
+          <InteractiveMap
+            initialCenter={initialCenter}
+            initialZoom={initialZoom}
+            mapCenterCoords={mapCenterCoords}
+            mobileView={mobileView}
+            sortedProperties={sortedProperties}
+            hoveredPropertyId={hoveredPropertyId}
+            onSelectProperty={onSelectProperty}
           />
-          <MapController coords={mapCenterCoords} mobileView={mobileView} />
-
-          <MarkerClusterGroup
-            markers={sortedProperties.filter(p => p.lat && p.lng)}
-            onMarkerClick={onSelectProperty}
-            hoveredId={hoveredPropertyId}
-            activeIcon={activeIcon}
-            defaultIcon={defaultIcon}
-          />
-        </MapContainer>
+        </Suspense>
       </div>
 
       {activeModalProperty && <PropertyModal property={activeModalProperty} onClose={onCloseModal} convertPrice={convertPrice} t={t} />}
